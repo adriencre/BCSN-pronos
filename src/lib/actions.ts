@@ -505,20 +505,43 @@ export async function getUserAllPredictions(userId: number) {
 export async function getLeaderboard() {
   const { data, error } = await supabase
     .from("users")
-    .select("id, pseudo, total_score, role, avatar_emoji, predictions(id)")
+    .select("id, pseudo, total_score, role, avatar_emoji, predictions(id, points_earned, match:matches(status, date_time))")
     .neq("role", "ADMIN")
     .order("total_score", { ascending: false });
 
   if (error || !data) return [];
 
-  return data.map((u) => ({
-    id: u.id,
-    pseudo: u.pseudo,
-    totalScore: u.total_score ?? 0,
-    role: u.role ?? "SUPPORTER",
-    avatarEmoji: u.avatar_emoji ?? "🏀",
-    _count: { predictions: Array.isArray(u.predictions) ? u.predictions.length : 0 },
-  }));
+  return data.map((u) => {
+    // Extract finished match predictions sorted by date descending
+    const rawPreds = Array.isArray(u.predictions) ? u.predictions : [];
+    const finishedPreds = rawPreds
+      .filter((p: any) => p.match && p.match.status === "FINISHED")
+      .sort((a: any, b: any) => new Date(b.match.date_time).getTime() - new Date(a.match.date_time).getTime());
+
+    // Take last 5 finished match outcomes (recent form)
+    const recentForm = finishedPreds.slice(0, 5).map((p: any) => p.points_earned ?? 0).reverse();
+
+    // Calculate current win streak (consecutive predictions with > 0 pts)
+    let streak = 0;
+    for (const p of finishedPreds) {
+      if ((p.points_earned ?? 0) > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      id: u.id,
+      pseudo: u.pseudo,
+      totalScore: u.total_score ?? 0,
+      role: u.role ?? "SUPPORTER",
+      avatarEmoji: u.avatar_emoji ?? "🏀",
+      recentForm,
+      streak,
+      _count: { predictions: rawPreds.length },
+    };
+  });
 }
 
 // ─── Past Matches ─────────────────────────────────────────────────────────────

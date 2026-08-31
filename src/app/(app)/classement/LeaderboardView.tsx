@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy, Star, Target } from "lucide-react";
+import { Trophy, Star, Target, Flame } from "lucide-react";
 
 interface Entry {
   id: number;
@@ -8,12 +8,56 @@ interface Entry {
   totalScore: number;
   role: string;
   avatarEmoji: string;
+  recentForm?: number[];
+  streak?: number;
   _count: { predictions: number };
 }
 
 interface Props {
   leaderboard: Entry[];
   currentUserId: number;
+}
+
+function FormDots({ form = [], streak = 0 }: { form?: number[]; streak?: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      {/* Streak badge */}
+      {streak >= 2 && (
+        <span className="text-[10px] font-extrabold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 animate-pulse">
+          <Flame size={11} className="fill-amber-400 text-amber-400" />
+          {streak}
+        </span>
+      )}
+
+      {/* Form Dots (Last 5 matches) */}
+      {form.length > 0 ? (
+        <div className="flex items-center gap-1 bg-bg-surface px-1.5 py-1 rounded-lg border border-border-1">
+          {form.map((pts, idx) => {
+            let colorClass = "bg-rose-500/80"; // 0 pts (Wrong)
+            let tooltip = "0 pt";
+
+            if (pts >= 5) {
+              colorClass = "bg-emerald-500 shadow-sm shadow-emerald-500/50"; // 5-10 pts (Great)
+              tooltip = `+${pts} pts (Excellent)`;
+            } else if (pts >= 1) {
+              colorClass = "bg-amber-400 shadow-sm shadow-amber-400/50"; // 1-3 pts (Good)
+              tooltip = `+${pts} pt`;
+            }
+
+            return (
+              <span
+                key={idx}
+                title={tooltip}
+                className={`w-2 h-2 rounded-full ${colorClass} transition-transform hover:scale-125`}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <span className="text-[10px] text-text-4 font-medium italic">Pas de forme</span>
+      )}
+    </div>
+  );
 }
 
 export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
@@ -34,14 +78,14 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 anim-fade">
         <div>
-          <h1 className="text-lg font-bold text-text-1">Classement</h1>
+          <h1 className="text-lg font-bold text-text-1">Classement Général</h1>
           <p className="text-xs text-text-3 mt-0.5">
-            {leaderboard.length} joueur{leaderboard.length > 1 ? "s" : ""}
+            {leaderboard.length} joueur{leaderboard.length > 1 ? "s" : ""} · Saison 2026–2027
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-text-3">
           <Trophy size={14} />
-          <span className="text-xs font-medium">Saison 2024–25</span>
+          <span className="text-xs font-medium">BCSN</span>
         </div>
       </div>
 
@@ -75,7 +119,7 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                       avatar ${isFirst ? "avatar-xl" : "avatar-lg"}
                       ${rc.bg} ring-2 ${rc.ring}
                       ${isMe ? "ring-primary ring-offset-2 ring-offset-bg-base" : ""}
-                      mb-2.5 anim-scale delay-2
+                      mb-2 anim-scale delay-2
                     `}
                   >
                     {entry.avatarEmoji}
@@ -83,12 +127,17 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
 
                   {/* Name */}
                   <p
-                    className={`text-xs font-bold text-center leading-tight mb-0.5 ${
+                    className={`text-xs font-bold text-center leading-tight mb-0.5 truncate w-full ${
                       isMe ? "text-primary-text" : "text-text-1"
                     }`}
                   >
                     {entry.pseudo}
                   </p>
+
+                  {/* Streak & Form */}
+                  <div className="mb-1">
+                    <FormDots form={entry.recentForm} streak={entry.streak} />
+                  </div>
 
                   {/* Role badge */}
                   <span
@@ -135,9 +184,9 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                 key={entry.id}
                 className={`
                   card px-4 py-3 flex items-center gap-3 anim-fade
-                  ${isMe ? "!border-primary/20 !bg-primary-soft" : ""}
+                  ${isMe ? "!border-primary/30 !bg-primary-soft/20 ring-1 ring-primary/20" : ""}
                 `}
-                style={{ animationDelay: `${200 + i * 50}ms` }}
+                style={{ animationDelay: `${200 + i * 40}ms` }}
               >
                 {/* Rank */}
                 <span className="text-xs font-bold text-text-4 w-6 text-center tabular-nums">
@@ -145,22 +194,22 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                 </span>
 
                 {/* Avatar */}
-                <div className="avatar avatar-sm bg-bg-surface">
+                <div className="avatar avatar-sm bg-bg-surface shrink-0">
                   {entry.avatarEmoji}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-0.5">
                     <p
-                      className={`text-sm font-semibold truncate ${
+                      className={`text-xs font-bold truncate ${
                         isMe ? "text-primary-text" : "text-text-1"
                       }`}
                     >
                       {entry.pseudo}
                     </p>
                     <span
-                      className={`badge ${
+                      className={`badge text-[9px] py-0 px-1.5 ${
                         entry.role === "JOUEUR"
                           ? "badge-joueur"
                           : "badge-supporter"
@@ -169,18 +218,14 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                       {entry.role === "JOUEUR" ? "Joueur" : "Supporter"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-text-4 mt-0.5">
-                    <Target size={10} />
-                    <span className="text-[10px]">
-                      {entry._count.predictions} prono
-                      {entry._count.predictions > 1 ? "s" : ""}
-                    </span>
-                  </div>
+
+                  {/* Form dots & streak */}
+                  <FormDots form={entry.recentForm} streak={entry.streak} />
                 </div>
 
                 {/* Score */}
-                <div className="text-right">
-                  <p className="text-base font-bold text-text-1 tabular-nums">
+                <div className="text-right shrink-0">
+                  <p className="text-base font-black text-text-1 tabular-nums">
                     {entry.totalScore}
                   </p>
                   <p className="text-[10px] text-text-4">pts</p>
@@ -207,11 +252,11 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
       )}
 
       {/* Scoring rules */}
-      <div className="card p-4 mb-4 anim-fade delay-5">
+      <div className="card p-4 mb-4 anim-fade delay-5 border border-border-1">
         <h3 className="text-xs font-bold text-text-2 uppercase tracking-wider mb-3">
-          Barème
+          Barème de points & Forme
         </h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {[
             { pts: 10, label: "Score exact", color: "text-gold bg-gold-soft" },
             { pts: 5, label: "Écart exact", color: "text-primary-text bg-primary-soft" },
@@ -220,16 +265,32 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
           ].map((r) => (
             <div
               key={r.pts}
-              className="flex items-center gap-2.5 rounded-xl p-2.5"
+              className="flex items-center gap-2.5 rounded-xl p-2 bg-bg-surface border border-border-1"
             >
               <span
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${r.color}`}
+                className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${r.color}`}
               >
                 {r.pts}
               </span>
-              <span className="text-xs text-text-2 font-medium">{r.label}</span>
+              <span className="text-[11px] text-text-2 font-medium">{r.label}</span>
             </div>
           ))}
+        </div>
+
+        {/* Legend for Form Dots */}
+        <div className="pt-2 border-t border-border-1 flex items-center justify-around text-[10px] text-text-3">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" /> +5 à 10 pts
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-400" /> +1 pt
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-rose-500" /> 0 pt
+          </span>
+          <span className="flex items-center gap-1 font-bold text-amber-400">
+            <Flame size={10} /> Série
+          </span>
         </div>
       </div>
     </div>
