@@ -93,12 +93,8 @@ export default function ActiveMatchView({
   // Prediction Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [scoreBcsn, setScoreBcsn] = useState(
-    existingPrediction?.predictedBcsn ?? 78
-  );
-  const [scoreOpp, setScoreOpp] = useState(
-    existingPrediction?.predictedOpponent ?? 72
-  );
+  const [scoreBcsn, setScoreBcsn] = useState(78);
+  const [scoreOpp, setScoreOpp] = useState(72);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -151,7 +147,7 @@ export default function ActiveMatchView({
         });
         setTimeout(() => {
           setIsModalOpen(false);
-          setIsShareModalOpen(true); // Open social share card after submitting!
+          setIsShareModalOpen(true);
           router.refresh();
         }, 1000);
       }
@@ -255,8 +251,8 @@ export default function ActiveMatchView({
         />
       )}
 
-      {/* POP-UP MODAL POUR PLACER SON PRONO */}
-      {isModalOpen && (
+      {/* POP-UP MODAL POUR PLACER SON PRONO (ACCESSIBLE SEULEMENT SI PAS ENCORE DE PRONO) */}
+      {isModalOpen && !existingPrediction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md anim-fade">
           <div className="relative w-full max-w-sm bg-bg-card rounded-3xl p-5 shadow-2xl border border-border-1 anim-slide">
             <button
@@ -430,14 +426,14 @@ export default function ActiveMatchView({
           )}
         </div>
 
-        {/* MAIN CTA BUTTON: PLACER VOTRE PARI */}
-        {votingOpen && (
+        {/* MAIN CTA BUTTON: PLACER VOTRE PARI (VISIBLE UNIQUEMENT SI AUCUN PARI ENCORE PLACÉ) */}
+        {votingOpen && !existingPrediction && (
           <button
             onClick={() => setIsModalOpen(true)}
             className="btn-primary w-full py-3.5 text-sm font-extrabold flex items-center justify-center gap-2 shadow-xl bg-gradient-to-r from-primary via-emerald-500 to-indigo-600 hover:scale-[1.01] transition-all"
           >
             <Sparkles size={18} />
-            {existingPrediction ? "Modifier mon pari" : "Placer votre pari"}
+            Placer votre pari
           </button>
         )}
       </div>
@@ -489,7 +485,7 @@ export default function ActiveMatchView({
         </div>
       </div>
 
-      {/* Prediction already submitted (Immutable & Shareable) */}
+      {/* Prediction already submitted (IMMUTABLE & LOCKED) */}
       {existingPrediction && (
         <div className="card p-5 mb-4 anim-slide delay-2">
           <div className="flex items-center justify-between mb-4">
@@ -497,8 +493,8 @@ export default function ActiveMatchView({
               <CheckCircle size={16} className="text-primary-text" />
               <h2 className="text-sm font-bold text-text-1">Votre pari enregistré</h2>
             </div>
-            <span className="badge badge-open text-[10px]">
-              <Lock size={10} /> Validé
+            <span className="badge badge-open text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <Lock size={10} /> Pari définitif & verrouillé
             </span>
           </div>
 
@@ -521,6 +517,10 @@ export default function ActiveMatchView({
               </p>
             </div>
           </div>
+
+          <p className="text-[11px] text-text-3 text-center mb-3 font-medium">
+            🔒 Votre pronostic est validé. Il ne peut plus être modifié.
+          </p>
 
           {/* Social Share Button */}
           <button
