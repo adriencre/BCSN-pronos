@@ -6,8 +6,12 @@ CREATE TABLE IF NOT EXISTS public.users (
   total_score INT DEFAULT 0,
   role TEXT DEFAULT 'SUPPORTER',
   avatar_emoji TEXT DEFAULT '🏀',
+  theme TEXT DEFAULT 'dark',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migrations sécurisées pour ajouter la colonne si la table existe déjà
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'dark';
 
 -- Table des Matchs
 CREATE TABLE IF NOT EXISTS public.matches (
@@ -33,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.predictions (
   CONSTRAINT unique_user_match UNIQUE(user_id, match_id)
 );
 
--- Activer RLS et autoriser l'accès public (nécessaire si Supabase force RLS)
+-- Activer RLS et autoriser l'accès public
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;

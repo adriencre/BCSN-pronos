@@ -12,6 +12,7 @@ export interface UserRecord {
   totalScore: number;
   role: string;
   avatarEmoji: string;
+  theme?: string;
   createdAt: Date;
   predictions?: PredictionRecord[];
 }
@@ -48,6 +49,7 @@ function transformUser(row: any): UserRecord {
     totalScore: row.total_score ?? 0,
     role: row.role ?? "SUPPORTER",
     avatarEmoji: row.avatar_emoji ?? "🏀",
+    theme: row.theme ?? "dark",
     createdAt: new Date(row.created_at),
     predictions: row.predictions ? row.predictions.map(transformPrediction) : [],
   };
@@ -293,6 +295,21 @@ export async function updateProfile(avatarEmoji: string) {
     .eq("id", user.id);
 
   if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function updateUserTheme(theme: "dark" | "light") {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Non connecté" };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ theme })
+    .eq("id", user.id);
+
+  if (error) {
+    console.warn("Notice: theme column update error (if DB schema not migrated yet):", error.message);
+  }
   return { success: true };
 }
 

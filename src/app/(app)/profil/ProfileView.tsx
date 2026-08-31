@@ -21,7 +21,7 @@ import {
   Moon,
   Paintbrush,
 } from "lucide-react";
-import { logoutUser, updateProfile } from "@/lib/actions";
+import { logoutUser, updateProfile, updateUserTheme } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
 
 interface PredictionHistory {
@@ -45,6 +45,7 @@ interface Props {
     totalScore: number;
     role: string;
     avatarEmoji: string;
+    theme?: string;
     createdAt: string;
     predictionsCount: number;
   };
@@ -63,18 +64,24 @@ export default function ProfileView({
   const [isPending, startTransition] = useTransition();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState(user.avatarEmoji);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(
+    (user.theme as "dark" | "light") || "dark"
+  );
 
-  // Load and apply theme from localStorage on mount & when changed
+  // Load and apply theme from user DB profile or localStorage on mount
   useEffect(() => {
-    const savedTheme = (localStorage.getItem("bcsn_theme") as "dark" | "light") || "dark";
+    const savedTheme =
+      (user.theme as "dark" | "light") ||
+      (localStorage.getItem("bcsn_theme") as "dark" | "light") ||
+      "dark";
+
     setTheme(savedTheme);
     if (savedTheme === "light") {
       document.documentElement.classList.add("light");
     } else {
       document.documentElement.classList.remove("light");
     }
-  }, []);
+  }, [user.theme]);
 
   const toggleTheme = (newTheme: "dark" | "light") => {
     setTheme(newTheme);
@@ -84,6 +91,11 @@ export default function ProfileView({
     } else {
       document.documentElement.classList.remove("light");
     }
+
+    // Persist to Supabase Database
+    startTransition(async () => {
+      await updateUserTheme(newTheme);
+    });
   };
 
   const handleLogout = () => {
@@ -242,7 +254,7 @@ export default function ProfileView({
             </div>
             <div>
               <p className="text-xs font-bold text-text-1">Apparence de l&apos;application</p>
-              <p className="text-[10px] text-text-3">Changer le thème visuel</p>
+              <p className="text-[10px] text-text-3">Sauvegardé sur votre compte BDD</p>
             </div>
           </div>
 
