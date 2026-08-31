@@ -1,5 +1,6 @@
 import BottomTabBar from "@/components/BottomTabBar";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import PullToRefresh from "@/components/PullToRefresh";
 import { getCurrentUser } from "@/lib/actions";
 
 export default async function AppLayout({
@@ -10,10 +11,12 @@ export default async function AppLayout({
   const user = await getCurrentUser();
 
   return (
-    <div className="min-h-screen bg-bg-base bg-texture pt-14">
-      <PwaInstallPrompt />
-      <main className="pb-36 max-w-md mx-auto">{children}</main>
-      <BottomTabBar userRole={user?.role} />
-    </div>
+    <PullToRefresh>
+      <div className="min-h-screen bg-bg-base bg-texture">
+        <PwaInstallPrompt />
+        <main className="pb-36 max-w-md mx-auto">{children}</main>
+        <BottomTabBar userRole={user?.role} />
+      </div>
+    </PullToRefresh>
   );
 }

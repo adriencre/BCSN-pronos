@@ -8,6 +8,7 @@ export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIos, setIsIos] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Check if running as installed standalone app
@@ -38,20 +39,21 @@ export default function PwaInstallPrompt() {
       if (choiceResult.outcome === "accepted") {
         setDeferredPrompt(null);
         setIsOpen(false);
+        setDismissed(true);
       }
     } else {
       setIsOpen(true);
     }
   };
 
-  // If already running inside standalone PWA mode, don't show the prompt button
-  if (isStandalone) return null;
+  // If already running inside standalone PWA mode or dismissed, don't render anything
+  if (isStandalone || dismissed) return null;
 
   return (
     <>
-      {/* Floating PWA Install Banner */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md anim-slide">
-        <div className="bg-gradient-to-r from-emerald-600 via-primary to-indigo-700 p-2.5 rounded-2xl shadow-2xl flex items-center justify-between text-white border border-white/20">
+      {/* PWA Install Banner */}
+      <div className="pt-3 px-3 max-w-md mx-auto anim-slide">
+        <div className="bg-gradient-to-r from-emerald-600 via-primary to-indigo-700 p-2.5 rounded-2xl shadow-xl flex items-center justify-between text-white border border-white/20">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-white p-1 shadow-md overflow-hidden shrink-0">
               <img src="/logo-192.png" alt="BCSN" className="w-full h-full object-contain" />
@@ -66,13 +68,22 @@ export default function PwaInstallPrompt() {
             </div>
           </div>
 
-          <button
-            onClick={() => setIsOpen(true)}
-            className="btn-secondary py-1.5 px-3 text-[11px] font-extrabold bg-white text-emerald-950 border-none shadow-md hover:bg-slate-100 flex items-center gap-1"
-          >
-            <Download size={13} />
-            Installer
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsOpen(true)}
+              className="btn-secondary py-1.5 px-3 text-[11px] font-extrabold bg-white text-emerald-950 border-none shadow-md hover:bg-slate-100 flex items-center gap-1"
+            >
+              <Download size={13} />
+              Installer
+            </button>
+            <button
+              onClick={() => setDismissed(true)}
+              className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white/80"
+              title="Fermer"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
