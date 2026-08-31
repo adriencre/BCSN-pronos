@@ -6,8 +6,6 @@ export default async function MatchsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  await seedSampleMatches();
-
   const active = await getActiveMatch();
   const pastMatches = await getPastMatches();
   const upcomingMatches = await getUpcomingMatches();
