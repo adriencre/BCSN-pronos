@@ -438,54 +438,7 @@ export default function ActiveMatchView({
         )}
       </div>
 
-      {/* Community Trends Card (Tendances de la Communauté) */}
-      <div className="card p-4 mb-4 anim-slide delay-2 border border-border-1">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary-soft text-primary-text flex items-center justify-center">
-              <BarChart3 size={15} />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-text-1">Tendances de la Communauté</h3>
-              <p className="text-[10px] text-text-4">Basé sur {totalVotes} pronostic{totalVotes > 1 ? "s" : ""}</p>
-            </div>
-          </div>
-          <span className="text-xs font-black text-primary-text bg-primary-soft px-2 py-0.5 rounded-md">
-            {bcsnWinPercent}% BCSN
-          </span>
-        </div>
-
-        {/* Dual Progress Bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-[11px] font-bold text-text-2 mb-1">
-            <span className="text-primary-text">Victoire BCSN ({bcsnWinPercent}%)</span>
-            <span className="text-accent">{oppWinPercent}% {match.opponent.split(" ")[0]}</span>
-          </div>
-          <div className="w-full h-3 bg-bg-surface rounded-full overflow-hidden flex border border-border-1 p-0.5">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-primary rounded-l-full transition-all duration-500"
-              style={{ width: `${bcsnWinPercent}%` }}
-            />
-            <div
-              className="h-full bg-gradient-to-r from-accent to-rose-600 rounded-r-full transition-all duration-500"
-              style={{ width: `${oppWinPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Average predicted score */}
-        <div className="bg-bg-surface p-2.5 rounded-xl flex items-center justify-between border border-border-1 text-xs">
-          <span className="text-text-3 font-semibold flex items-center gap-1.5">
-            <TrendingUp size={14} className="text-primary-text" />
-            Score moyen pronostiqué :
-          </span>
-          <span className="font-black text-text-1 tabular-nums">
-            BCSN <strong className="text-primary-text">{avgBcsnScore}</strong> – <strong className="text-text-1">{avgOppScore}</strong> {match.opponent.split(" ")[0]}
-          </span>
-        </div>
-      </div>
-
-      {/* Prediction already submitted (IMMUTABLE & LOCKED) */}
+      {/* Prediction already submitted (IMMUTABLE & LOCKED) - NOW PLACED ABOVE COMMUNITY TRENDS */}
       {existingPrediction && (
         <div className="card p-5 mb-4 anim-slide delay-2">
           <div className="flex items-center justify-between mb-4">
@@ -532,6 +485,53 @@ export default function ActiveMatchView({
           </button>
         </div>
       )}
+
+      {/* Community Trends Card (Tendances de la Communauté) */}
+      <div className="card p-4 mb-4 anim-slide delay-2 border border-border-1">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary-soft text-primary-text flex items-center justify-center">
+              <BarChart3 size={15} />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-text-1">Tendances de la Communauté</h3>
+              <p className="text-[10px] text-text-4">Basé sur {totalVotes} pronostic{totalVotes > 1 ? "s" : ""}</p>
+            </div>
+          </div>
+          <span className="text-xs font-black text-primary-text bg-primary-soft px-2 py-0.5 rounded-md">
+            {bcsnWinPercent}% BCSN
+          </span>
+        </div>
+
+        {/* Dual Progress Bar */}
+        <div className="mb-3">
+          <div className="flex justify-between text-[11px] font-bold text-text-2 mb-1">
+            <span className="text-primary-text">Victoire BCSN ({bcsnWinPercent}%)</span>
+            <span className="text-accent">{oppWinPercent}% {match.opponent.split(" ")[0]}</span>
+          </div>
+          <div className="w-full h-3 bg-bg-surface rounded-full overflow-hidden flex border border-border-1 p-0.5">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-primary rounded-l-full transition-all duration-500"
+              style={{ width: `${bcsnWinPercent}%` }}
+            />
+            <div
+              className="h-full bg-gradient-to-r from-accent to-rose-600 rounded-r-full transition-all duration-500"
+              style={{ width: `${oppWinPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Average predicted score */}
+        <div className="bg-bg-surface p-2.5 rounded-xl flex items-center justify-between border border-border-1 text-xs">
+          <span className="text-text-3 font-semibold flex items-center gap-1.5">
+            <TrendingUp size={14} className="text-primary-text" />
+            Score moyen pronostiqué :
+          </span>
+          <span className="font-black text-text-1 tabular-nums">
+            BCSN <strong className="text-primary-text">{avgBcsnScore}</strong> – <strong className="text-text-1">{avgOppScore}</strong> {match.opponent.split(" ")[0]}
+          </span>
+        </div>
+      </div>
 
       {/* Not voted and voting closed */}
       {!votingOpen && !existingPrediction && (
