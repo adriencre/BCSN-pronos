@@ -18,10 +18,11 @@ import {
   TrendingUp,
   X,
   Sparkles,
-  Trophy,
+  Share2,
 } from "lucide-react";
 import ScoreInput from "@/components/ScoreInput";
 import ClubProfileModal from "@/components/ClubProfileModal";
+import PredictionShareModal from "@/components/PredictionShareModal";
 import { submitPrediction } from "@/lib/actions";
 import { getClubLogoPath } from "@/lib/clubsData";
 
@@ -72,6 +73,8 @@ interface ActiveMatchViewProps {
     scoreOpponent: number | null;
     matchday: number;
   }>;
+  currentUserPseudo?: string;
+  currentUserAvatar?: string;
 }
 
 export default function ActiveMatchView({
@@ -80,6 +83,8 @@ export default function ActiveMatchView({
   currentUserId,
   upcomingMatches = [],
   pastMatches = [],
+  currentUserPseudo = "Supporter",
+  currentUserAvatar = "🏀",
 }: ActiveMatchViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -87,6 +92,7 @@ export default function ActiveMatchView({
 
   // Prediction Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [scoreBcsn, setScoreBcsn] = useState(
     existingPrediction?.predictedBcsn ?? 78
   );
@@ -145,8 +151,9 @@ export default function ActiveMatchView({
         });
         setTimeout(() => {
           setIsModalOpen(false);
+          setIsShareModalOpen(true); // Open social share card after submitting!
           router.refresh();
-        }, 1200);
+        }, 1000);
       }
     });
   };
@@ -232,6 +239,21 @@ export default function ActiveMatchView({
         onClose={() => setSelectedClubId(null)}
         pastMatches={pastMatches}
       />
+
+      {/* Social Media Share Card Modal */}
+      {existingPrediction && (
+        <PredictionShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          userPseudo={currentUserPseudo}
+          avatarEmoji={currentUserAvatar}
+          opponentName={match.opponent}
+          predictedBcsn={existingPrediction.predictedBcsn}
+          predictedOpponent={existingPrediction.predictedOpponent}
+          matchDate={match.dateTime}
+          isHome={match.isHome}
+        />
+      )}
 
       {/* POP-UP MODAL POUR PLACER SON PRONO */}
       {isModalOpen && (
@@ -467,7 +489,7 @@ export default function ActiveMatchView({
         </div>
       </div>
 
-      {/* Prediction already submitted (Immutable) */}
+      {/* Prediction already submitted (Immutable & Shareable) */}
       {existingPrediction && (
         <div className="card p-5 mb-4 anim-slide delay-2">
           <div className="flex items-center justify-between mb-4">
@@ -480,7 +502,7 @@ export default function ActiveMatchView({
             </span>
           </div>
 
-          <div className="bg-bg-surface rounded-xl p-4 flex items-center justify-center gap-6 border border-border-1">
+          <div className="bg-bg-surface rounded-xl p-4 flex items-center justify-center gap-6 border border-border-1 mb-4">
             <div className="text-center">
               <p className="text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1">
                 BCSN
@@ -499,6 +521,15 @@ export default function ActiveMatchView({
               </p>
             </div>
           </div>
+
+          {/* Social Share Button */}
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="btn-secondary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 text-primary-text border-primary/30 hover:bg-primary-soft/20"
+          >
+            <Share2 size={15} />
+            Partager mon pronostic (WhatsApp / Insta)
+          </button>
         </div>
       )}
 

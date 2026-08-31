@@ -42,6 +42,8 @@ export default async function MatchsPage() {
       }
       existingPrediction={existingPrediction}
       currentUserId={user.id}
+      currentUserPseudo={user.pseudo}
+      currentUserAvatar={user.avatarEmoji}
       upcomingMatches={upcomingMatches.map((m) => ({
         id: m.id,
         opponent: m.opponent,
