@@ -26,13 +26,13 @@ export default async function MatchsPage() {
                 ...active.match,
                 dateTime: active.match.dateTime.toISOString(),
                 createdAt: active.match.createdAt.toISOString(),
-                predictions: active.match.predictions.map((p) => ({
+                predictions: (active.match.predictions || []).map((p) => ({
                   ...p,
                   user: {
-                    id: p.user.id,
-                    pseudo: p.user.pseudo,
-                    avatarEmoji: p.user.avatarEmoji,
-                    role: p.user.role,
+                    id: p.user?.id ?? 0,
+                    pseudo: p.user?.pseudo ?? "Anonyme",
+                    avatarEmoji: p.user?.avatarEmoji ?? "🏀",
+                    role: p.user?.role ?? "SUPPORTER",
                   },
                 })),
               },

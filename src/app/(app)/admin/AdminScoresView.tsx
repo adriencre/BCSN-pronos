@@ -102,8 +102,8 @@ export default function AdminScoresView({ matches }: Props) {
         matchday: Number(newMatchday),
       });
 
-      if (res.error) {
-        alert(res.error);
+      if ("error" in res && res.error) {
+        alert(String(res.error));
       } else {
         setNewOpponent("");
         setActiveTab("upcoming");

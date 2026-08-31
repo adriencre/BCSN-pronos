@@ -9,5 +9,10 @@ export default async function AdminPage() {
   }
 
   const matches = await getMatches();
-  return <AdminScoresView matches={matches} />;
+  const formattedMatches = matches.map((m) => ({
+    ...m,
+    dateTime: m.dateTime.toISOString(),
+  }));
+
+  return <AdminScoresView matches={formattedMatches} />;
 }
