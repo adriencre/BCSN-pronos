@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Palette sobre et professionnelle ── */
+  /* ── Palette Dark par défaut ── */
   --color-bg-base: #0C1117;
   --color-bg-elevated: #141C25;
   --color-bg-card: #1A2433;
@@ -40,6 +40,47 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* ── Light Mode Override Variables ── */
+html.light {
+  --color-bg-base: #F1F5F9;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-hover: #F8FAFC;
+  --color-bg-input: #F8FAFC;
+  --color-bg-surface: #F1F5F9;
+  
+  --color-primary: #10B981;
+  --color-primary-soft: rgba(16, 185, 129, 0.12);
+  --color-primary-medium: rgba(16, 185, 129, 0.22);
+  --color-primary-text: #059669;
+  
+  --color-accent: #E11D48;
+  --color-accent-soft: rgba(225, 29, 72, 0.12);
+  --color-accent-hover: #BE123C;
+  
+  --color-text-1: #0F172A;
+  --color-text-2: #334155;
+  --color-text-3: #64748B;
+  --color-text-4: #94A3B8;
+  
+  --color-border-1: rgba(0, 0, 0, 0.08);
+  --color-border-2: rgba(0, 0, 0, 0.12);
+  
+  --color-gold: #D97706;
+  --color-gold-soft: rgba(217, 119, 6, 0.12);
+  --color-silver: #64748B;
+  --color-silver-soft: rgba(100, 116, 139, 0.12);
+  --color-bronze: #B45309;
+  --color-bronze-soft: rgba(180, 83, 9, 0.12);
+
+  color-scheme: light;
+}
+
+html.light .tab-bar {
+  background: rgba(255, 255, 255, 0.94);
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
 /* ── Base ── */
 html {
   scroll-behavior: smooth;
@@ -57,7 +98,7 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* ── Animations – subtiles et professionnelles ── */
+/* ── Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -102,7 +143,7 @@ body {
 .delay-5 { animation-delay: 300ms; }
 .delay-6 { animation-delay: 360ms; }
 
-/* ── Glass card ── */
+/* ── Cards ── */
 .card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-1);
@@ -113,7 +154,7 @@ body {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-2);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Tab bar ── */
@@ -130,7 +171,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ── Score buttons – tactiles, gros ── */
+/* ── Score buttons ── */
 .score-btn {
   display: flex;
   align-items: center;
