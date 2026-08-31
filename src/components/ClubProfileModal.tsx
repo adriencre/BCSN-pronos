@@ -1,6 +1,7 @@
 "use client";
 
-import { X, MapPin, Building, Shield, History, Trophy, Calendar } from "lucide-react";
+import { useEffect } from "react";
+import { X, MapPin, Building, Shield, History, Calendar } from "lucide-react";
 import { getClubBySlug, getClubLogoPath, ClubProfile } from "@/lib/clubsData";
 
 interface ClubProfileModalProps {
@@ -18,6 +19,16 @@ interface ClubProfileModalProps {
 }
 
 export default function ClubProfileModal({ clubId, onClose, pastMatches = [] }: ClubProfileModalProps) {
+  // Lock body scroll when modal is active
+  useEffect(() => {
+    if (clubId) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [clubId]);
+
   if (!clubId) return null;
 
   const club: ClubProfile = getClubBySlug(clubId);
@@ -30,19 +41,19 @@ export default function ClubProfileModal({ clubId, onClose, pastMatches = [] }: 
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md anim-fade touch-none">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md anim-fade">
       {/* Backdrop click to dismiss */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Card Container */}
-      <div className="relative w-full max-w-md max-h-[85vh] bg-bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border-1 anim-slide z-10 flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-md bg-bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border-1 anim-slide z-10 flex flex-col max-h-[85vh] overflow-hidden">
         {/* Top Handle bar for mobile feel & Sticky Close Button */}
-        <div className="pt-3 pb-2 px-5 bg-bg-card flex items-center justify-between border-b border-border-1/50 shrink-0">
+        <div className="pt-3 pb-2.5 px-5 bg-bg-card flex items-center justify-between border-b border-border-1/50 shrink-0">
           <div className="w-10 h-1 bg-text-4/30 rounded-full mx-auto sm:hidden" />
           <span className="text-[11px] font-bold text-text-3 uppercase tracking-wider hidden sm:block">Fiche Club</span>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-bg-surface flex items-center justify-center text-text-3 hover:text-text-1 ml-auto transition-colors"
+            className="w-8 h-8 rounded-full bg-bg-surface flex items-center justify-center text-text-3 hover:text-text-1 ml-auto transition-colors"
             title="Fermer"
           >
             <X size={16} />
@@ -50,7 +61,7 @@ export default function ClubProfileModal({ clubId, onClose, pastMatches = [] }: 
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="p-5 overflow-y-auto overscroll-contain flex-1 space-y-4 text-xs webkit-overflow-scrolling-touch">
+        <div className="p-5 overflow-y-auto overscroll-contain flex-1 space-y-4 text-xs touch-pan-y">
           {/* Header Banner */}
           <div className={`rounded-2xl p-5 bg-gradient-to-br ${club.primaryColor} text-white shadow-md`}>
             <div className="flex items-center gap-4 mb-3">
