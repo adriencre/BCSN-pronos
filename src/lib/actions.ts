@@ -230,6 +230,12 @@ export async function registerUser(
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365,
   });
+  cookieStore.set("bcsn_theme", "dark", {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   return { success: true, userId: newUser.id };
 }
@@ -254,6 +260,12 @@ export async function loginUser(pseudo: string, pinCode: string) {
   const cookieStore = await cookies();
   cookieStore.set("userId", String(user.id), {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+  cookieStore.set("bcsn_theme", user.theme || "dark", {
+    httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365,
@@ -310,10 +322,17 @@ export async function updateProfile(avatarEmoji: string) {
   return { success: true };
 }
 
-
 export async function updateUserTheme(theme: "dark" | "light") {
   const user = await getCurrentUser();
   if (!user) return { error: "Non connecté" };
+
+  const cookieStore = await cookies();
+  cookieStore.set("bcsn_theme", theme, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   const { error } = await supabase
     .from("users")
@@ -325,6 +344,7 @@ export async function updateUserTheme(theme: "dark" | "light") {
   }
   return { success: true };
 }
+
 
 // ─── Match Actions ────────────────────────────────────────────────────────────
 export async function getMatches() {

@@ -6,10 +6,12 @@ export default async function ProfilPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const leaderboard = await getLeaderboard();
-  const rank = leaderboard.findIndex((u) => u.id === user.id) + 1;
+  const [leaderboard, rawPredictions] = await Promise.all([
+    getLeaderboard(),
+    getUserAllPredictions(user.id),
+  ]);
 
-  const rawPredictions = await getUserAllPredictions(user.id);
+  const rank = leaderboard.findIndex((u) => u.id === user.id) + 1;
 
   const predictions = rawPredictions.map((pred) => ({
     matchId: pred.matchId,
@@ -33,6 +35,7 @@ export default async function ProfilPage() {
         totalScore: user.totalScore,
         role: user.role,
         avatarEmoji: user.avatarEmoji,
+        theme: user.theme ?? "dark",
         createdAt: user.createdAt.toISOString(),
         predictionsCount: predictions.length,
       }}

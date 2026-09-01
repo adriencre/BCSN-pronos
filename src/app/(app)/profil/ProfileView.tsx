@@ -94,7 +94,11 @@ export default function ProfileView({
 
   const toggleTheme = (newTheme: "dark" | "light") => {
     setTheme(newTheme);
-    localStorage.setItem("bcsn_theme", newTheme);
+    try {
+      localStorage.setItem("bcsn_theme", newTheme);
+      document.cookie = `bcsn_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (e) {}
+
     if (newTheme === "light") {
       document.documentElement.classList.add("light");
     } else {
@@ -105,6 +109,7 @@ export default function ProfileView({
       await updateUserTheme(newTheme);
     });
   };
+
 
   const handleLogout = () => {
     startTransition(async () => {

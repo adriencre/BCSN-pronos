@@ -1,5 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { cookies } from "next/headers";
+import ThemeSynchronizer from "@/components/ThemeSynchronizer";
 import "./globals.css";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800", "900"],
+  variable: "--font-heading",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "BCSN Pronos | L'Application Officielle de Pronostics",
@@ -21,30 +38,35 @@ export const viewport: Viewport = {
   themeColor: "#070A11",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("bcsn_theme")?.value;
+  const isLight = themeCookie === "light";
+
   return (
-    <html lang="fr" data-scroll-behavior="smooth">
+    <html
+      lang="fr"
+      className={`${plusJakartaSans.variable} ${outfit.variable} ${isLight ? "light" : ""}`}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
+        {/* Instant zero-flash client theme script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('bcsn_theme')||(document.cookie.match(/(?:^|; )bcsn_theme=([^;]*)/)||[])[1];if(t==='light'){document.documentElement.classList.add('light')}else{document.documentElement.classList.remove('light')}}catch(e){}})()`,
+          }}
         />
         <link rel="apple-touch-icon" href="/logo-192.png" />
       </head>
       <body className="font-sans bg-bg-base text-text-1 antialiased min-h-screen selection:bg-primary/30 selection:text-primary-text">
+        <ThemeSynchronizer initialTheme={themeCookie} />
         {children}
       </body>
     </html>
   );
 }
-

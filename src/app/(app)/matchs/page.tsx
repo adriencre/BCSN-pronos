@@ -1,4 +1,4 @@
-import { getActiveMatch, getCurrentUser, getUserPrediction, seedSampleMatches, getPastMatches, getUpcomingMatches } from "@/lib/actions";
+import { getActiveMatch, getCurrentUser, getUserPrediction, getPastMatches, getUpcomingMatches } from "@/lib/actions";
 import { redirect } from "next/navigation";
 import ActiveMatchView from "./ActiveMatchView";
 
@@ -6,9 +6,11 @@ export default async function MatchsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const active = await getActiveMatch();
-  const pastMatches = await getPastMatches();
-  const upcomingMatches = await getUpcomingMatches();
+  const [active, pastMatches, upcomingMatches] = await Promise.all([
+    getActiveMatch(),
+    getPastMatches(),
+    getUpcomingMatches(),
+  ]);
 
   let existingPrediction = null;
   if (active) {
