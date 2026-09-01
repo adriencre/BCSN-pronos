@@ -183,14 +183,14 @@ html.light .glass-card {
 /* ── Floating Navigation Dock (iOS / Pro App feel) ── */
 .tab-bar {
   position: fixed;
-  bottom: 0;
+  bottom: max(8px, calc(env(safe-area-inset-bottom, 0px) * 0.5 + 4px));
   left: 0;
   right: 0;
   z-index: 50;
   pointer-events: none;
-  padding-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px));
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 0;
 }
 
 .tab-bar > div {
@@ -200,7 +200,7 @@ html.light .glass-card {
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  box-shadow: 0 20px 40px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
 }
 
 html.light .tab-bar > div {
