@@ -82,9 +82,10 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
     <div className="relative">
       {/* Pull To Refresh Indicator Bar */}
       <div
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-150 will-change-transform"
+        className="fixed left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-150 will-change-transform"
         style={{
-          transform: `translateY(${isRefreshing ? 16 : pullDistance > 0 ? pullDistance - 40 : -60}px)`,
+          top: "max(8px, env(safe-area-inset-top, 8px))",
+          transform: `translateY(${isRefreshing ? 12 : pullDistance > 0 ? pullDistance - 45 : -65}px)`,
           opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
         }}
       >

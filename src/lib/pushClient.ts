@@ -45,8 +45,13 @@ export function isStandalonePWA(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    window.matchMedia("(display-mode: minimal-ui)").matches ||
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window.navigator as any).standalone === true
+    (window.navigator as any).standalone === true ||
+    (typeof document !== "undefined" &&
+      (document.documentElement.classList.contains("is-standalone") ||
+        document.referrer.includes("android-app://")))
   );
 }
 

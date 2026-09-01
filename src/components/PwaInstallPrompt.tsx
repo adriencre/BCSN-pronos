@@ -2,23 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { Download, X, Share, PlusSquare, Smartphone, CheckCircle, Sparkles } from "lucide-react";
+import { isStandalonePWA, isIOSDevice } from "@/lib/pushClient";
+
+const DISMISS_KEY = "bcsn_pwa_prompt_dismissed_until";
+const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 export default function PwaInstallPrompt() {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isIos, setIsIos] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if running as installed standalone app
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsStandalone(true);
-    }
+    setMounted(true);
 
-    // Detect iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    setIsIos(/iphone|ipad|ipod/.test(userAgent));
+    // Check if running as installed standalone app (iOS / Android / PWA)
+    const standalone = isStandalonePWA();
+    setIsStandalone(standalone);
+
+    // Check if dismissed recently
+    const dismissedUntil = localStorage.getItem(DISMISS_KEY);
+    if (dismissedUntil && Date.now() < Number(dismissedUntil)) {
+      setDismissed(true);
+    }
 
     // Listen for native Android/Chrome install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -32,6 +40,11 @@ export default function PwaInstallPrompt() {
     };
   }, []);
 
+  const handleDismiss = () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DURATION_MS));
+    setDismissed(true);
+  };
+
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -39,15 +52,15 @@ export default function PwaInstallPrompt() {
       if (choiceResult.outcome === "accepted") {
         setDeferredPrompt(null);
         setIsOpen(false);
-        setDismissed(true);
+        handleDismiss();
       }
     } else {
       setIsOpen(true);
     }
   };
 
-  // If already running inside standalone PWA mode or dismissed, don't render anything
-  if (isStandalone || dismissed) return null;
+  // If not mounted yet (SSR), or already running inside standalone PWA mode or dismissed, don't render anything
+  if (!mounted || isStandalone || dismissed) return null;
 
   return (
     <>
@@ -77,7 +90,7 @@ export default function PwaInstallPrompt() {
               Installer
             </button>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={handleDismiss}
               className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white/80"
               title="Fermer"
             >

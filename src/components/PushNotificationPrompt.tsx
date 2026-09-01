@@ -97,8 +97,8 @@ export default function PushNotificationPrompt() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm anim-fade">
-      <div className="w-full max-w-sm bg-gradient-to-b from-bg-card via-bg-elevated to-slate-950 rounded-3xl border border-primary/40 shadow-2xl p-5 relative overflow-hidden anim-scale">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm anim-fade">
+      <div className="w-full max-w-sm bg-gradient-to-b from-bg-card via-bg-elevated to-slate-950 rounded-3xl border border-primary/40 shadow-2xl p-5 relative overflow-hidden anim-scale my-auto">
         {/* Background glow effects */}
         <div className="absolute -top-16 -right-16 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />

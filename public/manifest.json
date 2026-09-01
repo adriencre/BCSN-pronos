@@ -1,20 +1,25 @@
 {
-  "short_name": "BCSN",
-  "name": "Basket Club Saint-Nicolas Pronos",
-  "start_url": "/",
+  "short_name": "BCSN Pronos",
+  "name": "Basket Club Saint-Nicolas Pronostics",
+  "start_url": "/matchs",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#059669",
+  "orientation": "portrait-primary",
+  "background_color": "#070A11",
+  "theme_color": "#070A11",
+  "categories": ["sports", "entertainment"],
   "icons": [
     {
       "src": "/logo-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

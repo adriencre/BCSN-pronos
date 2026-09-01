@@ -33,6 +33,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
   themeColor: "#070A11",
 };
 
@@ -52,6 +53,19 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){
+              // Immediate standalone PWA app mode detection
+              try {
+                if (
+                  window.matchMedia('(display-mode: standalone)').matches ||
+                  window.matchMedia('(display-mode: fullscreen)').matches ||
+                  window.matchMedia('(display-mode: minimal-ui)').matches ||
+                  navigator.standalone === true ||
+                  (document.referrer && document.referrer.indexOf('android-app://') !== -1)
+                ) {
+                  document.documentElement.classList.add('is-standalone');
+                }
+              } catch(e){}
+
               function removeNetlifyBadge(){
                 try {
                   var els = document.querySelectorAll('a[href*="netlify.com"], [class*="netlify-badge"], [id*="netlify-badge"], [data-netlify-badge], .netlify-badge, iframe[src*="netlify"]');
