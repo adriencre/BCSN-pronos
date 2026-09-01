@@ -25,12 +25,10 @@ import {
   Shield,
 } from "lucide-react";
 import ScoreInput from "@/components/ScoreInput";
-import ClubProfileModal from "@/components/ClubProfileModal";
 import PredictionShareModal from "@/components/PredictionShareModal";
 import UserAvatar from "@/components/UserAvatar";
 import { submitPrediction } from "@/lib/actions";
-
-import { getClubLogoPath } from "@/lib/clubsData";
+import { getClubLogoPath, getClubSlug } from "@/lib/clubsData";
 
 interface ActiveMatchViewProps {
   active: {
@@ -94,7 +92,6 @@ export default function ActiveMatchView({
 }: ActiveMatchViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
 
   // Prediction Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -167,15 +164,6 @@ export default function ActiveMatchView({
       month: "long",
     });
 
-  const formatFullDateTime = (d: string) =>
-    new Date(d).toLocaleDateString("fr-FR", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("fr-FR", {
       hour: "2-digit",
@@ -237,13 +225,6 @@ export default function ActiveMatchView({
 
   return (
     <div className="px-4 pt-4 pb-12">
-      {/* Club Profile Modal Drawer */}
-      <ClubProfileModal
-        clubId={selectedClubId}
-        onClose={() => setSelectedClubId(null)}
-        pastMatches={pastMatches}
-      />
-
       {/* Social Media Share Card Modal */}
       {existingPrediction && (
         <PredictionShareModal
@@ -354,7 +335,6 @@ export default function ActiveMatchView({
             </div>
           </div>
           <div>
-
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-extrabold text-text-1 leading-none">
                 {currentUserPseudo}
@@ -405,11 +385,11 @@ export default function ActiveMatchView({
           </div>
         </div>
 
-        {/* Teams Display with Pro Stadium Pods */}
+        {/* Teams Display with Direct Links to Club Pages */}
         <div className="flex items-center justify-between gap-3 mb-6 relative z-10">
           {/* Team 1: BCSN */}
           <div
-            onClick={() => setSelectedClubId("bcsn")}
+            onClick={() => router.push("/clubs/bcsn")}
             className="flex-1 flex flex-col items-center cursor-pointer group"
           >
             <div className="w-20 h-20 rounded-3xl bg-white p-2 shadow-xl flex items-center justify-center mb-2.5 border-2 border-primary/30 group-hover:scale-105 group-hover:border-primary transition-all overflow-hidden shrink-0 relative">
@@ -427,7 +407,7 @@ export default function ActiveMatchView({
             </p>
             <p className="text-[10px] text-text-3 font-semibold mt-0.5">Saint-Nicolas</p>
             <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
-              Fiche Scout <ArrowRight size={10} />
+              Fiche Club <ArrowRight size={10} />
             </span>
           </div>
 
@@ -443,7 +423,7 @@ export default function ActiveMatchView({
 
           {/* Team 2: Opponent */}
           <div
-            onClick={() => setSelectedClubId(match.opponent.split(" ")[0].toLowerCase())}
+            onClick={() => router.push(`/clubs/${getClubSlug(match.opponent)}`)}
             className="flex-1 flex flex-col items-center cursor-pointer group"
           >
             <div className="w-20 h-20 rounded-3xl bg-white p-2 shadow-xl flex items-center justify-center mb-2.5 border-2 border-border-2 group-hover:scale-105 group-hover:border-accent transition-all overflow-hidden shrink-0 relative">
@@ -467,7 +447,7 @@ export default function ActiveMatchView({
             </p>
             <p className="text-[10px] text-text-3 font-semibold mt-0.5">Visiteur</p>
             <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
-              Fiche Scout <ArrowRight size={10} />
+              Fiche Club <ArrowRight size={10} />
             </span>
           </div>
         </div>
@@ -618,7 +598,7 @@ export default function ActiveMatchView({
               return (
                 <div
                   key={m.id}
-                  onClick={() => setSelectedClubId(m.opponent.split(" ")[0].toLowerCase())}
+                  onClick={() => router.push(`/clubs/${getClubSlug(m.opponent)}`)}
                   className={`card p-3.5 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all ${
                     isCurrent ? "ring-2 ring-primary/40 bg-primary-soft/10" : ""
                   }`}
@@ -685,7 +665,7 @@ export default function ActiveMatchView({
               return (
                 <div
                   key={m.id}
-                  onClick={() => setSelectedClubId(m.opponent.split(" ")[0].toLowerCase())}
+                  onClick={() => router.push(`/clubs/${getClubSlug(m.opponent)}`)}
                   className="card px-4 py-3 flex items-center justify-between cursor-pointer hover:border-primary/40 transition-all"
                 >
                   <div className="flex items-center gap-3">

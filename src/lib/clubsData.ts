@@ -304,3 +304,8 @@ export function getClubBySlug(slug: string): ClubProfile {
   }
   return CLUBS_DATA.bcsn;
 }
+
+export function getClubSlug(nameStr: string): string {
+  return getClubBySlug(nameStr).id;
+}
+
