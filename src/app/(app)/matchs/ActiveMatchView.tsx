@@ -19,6 +19,10 @@ import {
   X,
   Sparkles,
   Share2,
+  Flame,
+  Trophy,
+  ArrowRight,
+  Shield,
 } from "lucide-react";
 import ScoreInput from "@/components/ScoreInput";
 import ClubProfileModal from "@/components/ClubProfileModal";
@@ -112,7 +116,7 @@ export default function ActiveMatchView({
       const now = Date.now();
       const diff = target - now;
       if (diff <= 0) {
-        setCountdown(active.isVotingOpen ? "Votes fermés" : "Ouverture imminente");
+        setCountdown(active.isVotingOpen ? "Clôturé" : "Imminent");
         return;
       }
       const d = Math.floor(diff / 86400000);
@@ -121,11 +125,11 @@ export default function ActiveMatchView({
       const s = Math.floor((diff % 60000) / 1000);
 
       if (d > 0) {
-        setCountdown(`${d}j ${h}h ${m}min`);
+        setCountdown(`${d}j ${h}h ${m}m`);
       } else if (h > 0) {
-        setCountdown(`${h}h ${m}min ${s}s`);
+        setCountdown(`${h}h ${m}m ${s}s`);
       } else {
-        setCountdown(`${m}min ${s}s`);
+        setCountdown(`${m}m ${s}s`);
       }
     };
 
@@ -149,7 +153,7 @@ export default function ActiveMatchView({
           setIsModalOpen(false);
           setIsShareModalOpen(true);
           router.refresh();
-        }, 1000);
+        }, 800);
       }
     });
   };
@@ -189,15 +193,15 @@ export default function ActiveMatchView({
   if (!active) {
     return (
       <div className="px-5 pt-8">
-        <div className="text-center py-20 anim-fade">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-bg-surface flex items-center justify-center mb-4">
-            <CalendarClock size={28} className="text-text-3" />
+        <div className="text-center py-20 card-elevated p-8 anim-fade">
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-primary-soft border border-primary/30 flex items-center justify-center mb-4">
+            <CalendarClock size={36} className="text-primary-text" />
           </div>
-          <h2 className="text-lg font-bold text-text-1 mb-2">
+          <h2 className="text-xl font-black text-text-1 mb-2">
             Aucun match à venir
           </h2>
-          <p className="text-sm text-text-3 max-w-[260px] mx-auto">
-            Le prochain match n&apos;a pas encore été programmé. Reviens bientôt !
+          <p className="text-xs text-text-3 max-w-[280px] mx-auto leading-relaxed">
+            Le prochain match du BCSN n&apos;a pas encore été programmé par le coach. Reviens très vite !
           </p>
         </div>
       </div>
@@ -206,11 +210,10 @@ export default function ActiveMatchView({
 
   const match = active.match;
   const votingOpen = active.isVotingOpen;
-  const participantCount = match.predictions.length;
   const activeOpponentLogo = getClubLogoPath(match.opponent);
   const bcsnLogo = getClubLogoPath("bcsn") || "/logos/bcsn.jpg";
 
-  // Community Trends Calculation
+  // Community Trends
   const totalVotes = match.predictions.length;
   const bcsnWinVotes = match.predictions.filter((p) => p.predictedBcsn > p.predictedOpponent).length;
   const oppWinVotes = match.predictions.filter((p) => p.predictedOpponent > p.predictedBcsn).length;
@@ -227,9 +230,12 @@ export default function ActiveMatchView({
       ? Math.round(match.predictions.reduce((acc, p) => acc + p.predictedOpponent, 0) / totalVotes)
       : 72;
 
+  const predictedDiff = Math.abs(scoreBcsn - scoreOpp);
+  const bcsnFavored = scoreBcsn > scoreOpp;
+
   return (
-    <div className="px-5 pt-6 pb-12">
-      {/* Club Profile Modal Overlay */}
+    <div className="px-4 pt-4 pb-12">
+      {/* Club Profile Modal Drawer */}
       <ClubProfileModal
         clubId={selectedClubId}
         onClose={() => setSelectedClubId(null)}
@@ -251,55 +257,68 @@ export default function ActiveMatchView({
         />
       )}
 
-      {/* POP-UP MODAL POUR PLACER SON PRONO (ACCESSIBLE SEULEMENT SI PAS ENCORE DE PRONO) */}
+      {/* POP-UP MODAL POUR PLACER SON PRONO */}
       {isModalOpen && !existingPrediction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md anim-fade">
-          <div className="relative w-full max-w-sm bg-bg-card rounded-3xl p-5 shadow-2xl border border-border-1 anim-slide">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl anim-fade">
+          <div className="relative w-full max-w-sm card-elevated p-6 shadow-2xl border border-border-2 anim-scale">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-text-4 hover:text-text-1 w-8 h-8 rounded-full bg-bg-surface flex items-center justify-center"
+              className="absolute top-4 right-4 text-text-4 hover:text-text-1 w-9 h-9 rounded-full bg-bg-surface flex items-center justify-center transition-colors"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
 
-            <div className="text-center mb-4">
+            <div className="text-center mb-5">
               <span className="badge badge-open text-[10px] mb-2 inline-flex items-center gap-1">
-                <Sparkles size={10} /> Pronostic Officiel BCSN
+                <Sparkles size={11} className="text-primary-text" /> Pronostic Match Officiel
               </span>
-              <h3 className="text-base font-black text-text-1">
+              <h3 className="text-lg font-black text-text-1">
                 Placer votre pari
               </h3>
-              <p className="text-xs text-text-3 mt-0.5">
+              <p className="text-xs text-text-3 mt-0.5 font-medium">
                 {match.isHome ? `BCSN vs ${match.opponent}` : `${match.opponent} vs BCSN`}
               </p>
             </div>
 
             {/* Score Inputs Stepper */}
-            <div className="flex items-center justify-center gap-4 my-5 bg-bg-surface p-4 rounded-2xl border border-border-1">
-              <ScoreInput label="BCSN" value={scoreBcsn} onChange={setScoreBcsn} />
-              <div className="text-xl font-bold text-text-4 mt-8">–</div>
+            <div className="flex items-center justify-center gap-3 my-4 bg-bg-surface p-4 rounded-2xl border border-border-1">
+              <ScoreInput
+                label="BCSN"
+                value={scoreBcsn}
+                onChange={setScoreBcsn}
+                teamLogo={bcsnLogo}
+              />
+              <div className="text-2xl font-black text-text-4 mt-6">–</div>
               <ScoreInput
                 label={match.opponent.split(" ")[0].toUpperCase()}
                 value={scoreOpp}
                 onChange={setScoreOpp}
+                teamLogo={activeOpponentLogo}
               />
             </div>
 
-            {/* Live Summary */}
-            <div className="bg-bg-surface rounded-xl p-3 mb-4 text-center border border-border-1">
-              <span className="text-[11px] text-text-3 block mb-0.5">Votre pronostic :</span>
-              <span className="text-sm font-black text-primary-text tabular-nums">
-                BCSN {scoreBcsn} – {scoreOpp} {match.opponent.split(" ")[0]}
+            {/* Live Summary Callout */}
+            <div className="bg-bg-card rounded-2xl p-3.5 mb-4 text-center border border-border-2">
+              <span className="text-[10px] text-text-3 font-bold uppercase tracking-wider block mb-1">
+                Aperçu de votre résultat :
+              </span>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-base font-black text-text-1 tabular-nums">
+                  BCSN <strong className="text-primary-text">{scoreBcsn}</strong> – <strong className="text-accent">{scoreOpp}</strong> {match.opponent.split(" ")[0]}
+                </span>
+              </div>
+              <span className={`text-[11px] font-bold mt-1 block ${bcsnFavored ? "text-primary-text" : "text-accent"}`}>
+                {bcsnFavored ? `🔥 Victoire BCSN de +${predictedDiff} pts` : `⚠️ Victoire ${match.opponent.split(" ")[0]} de +${predictedDiff} pts`}
               </span>
             </div>
 
             {/* Message Feedback */}
             {message && (
               <div
-                className={`flex items-center gap-2 p-3 rounded-xl mb-4 text-xs font-medium ${
+                className={`flex items-center gap-2 p-3 rounded-xl mb-4 text-xs font-semibold ${
                   message.type === "success"
-                    ? "bg-primary-soft text-primary-text"
-                    : "bg-accent-soft text-accent"
+                    ? "bg-primary-soft text-primary-text border border-primary/30"
+                    : "bg-accent-soft text-accent border border-accent/30"
                 }`}
               >
                 {message.type === "success" ? (
@@ -307,7 +326,7 @@ export default function ActiveMatchView({
                 ) : (
                   <AlertCircle size={16} />
                 )}
-                {message.text}
+                <span>{message.text}</span>
               </div>
             )}
 
@@ -315,86 +334,116 @@ export default function ActiveMatchView({
             <button
               onClick={handleSubmit}
               disabled={isPending}
-              className="btn-primary w-full py-3 text-xs font-bold flex items-center justify-center gap-2 shadow-lg"
+              className="btn-primary w-full py-3.5 text-xs font-black flex items-center justify-center gap-2 shadow-xl"
             >
               <Send size={16} />
-              {isPending ? "Enregistrement..." : "Valider mon pronostic"}
+              <span>{isPending ? "Validation en cours..." : "Confirmer mon pronostic"}</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6 anim-fade">
-        <div>
-          <h1 className="text-lg font-bold text-text-1">Prochain Match</h1>
-          <p className="text-xs text-text-3 mt-0.5">
-            {match.matchday > 0 ? `Journée ${match.matchday}` : "Match amical / Coupe"}
-          </p>
+      {/* Top Player Snippet Bar */}
+      <div className="flex items-center justify-between mb-4 bg-bg-card/70 backdrop-blur-md p-3 rounded-2xl border border-border-1 anim-fade">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-bcsn-blue p-0.5 shadow-md flex items-center justify-center text-lg shrink-0">
+            <div className="w-full h-full rounded-[10px] bg-bg-surface flex items-center justify-center">
+              {currentUserAvatar}
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-extrabold text-text-1 leading-none">
+                {currentUserPseudo}
+              </span>
+              <span className="text-[9px] font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <Flame size={10} className="fill-amber-400 text-amber-400" /> 3
+              </span>
+            </div>
+            <p className="text-[10px] text-text-3 font-medium mt-0.5">
+              Prêt pour le choc du week-end
+            </p>
+          </div>
         </div>
-        {votingOpen ? (
-          <div className="badge badge-open">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-text anim-pulse" />
-            Votes ouverts
-          </div>
-        ) : (
-          <div className="badge badge-closed">
-            <Clock size={10} />
-            Ouverture prochaine
-          </div>
-        )}
+
+        <button
+          onClick={() => router.push("/classement")}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-bg-surface hover:bg-bg-card border border-border-1 text-xs font-bold text-text-2 hover:text-text-1 transition-all"
+        >
+          <Trophy size={14} className="text-gold" />
+          <span className="text-[11px]">Classement</span>
+        </button>
       </div>
 
-      {/* Hero Match Card */}
-      <div className="card-elevated p-5 mb-4 anim-slide delay-1">
-        {/* Location + Time */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1.5 text-text-3">
-            <MapPin size={12} />
-            <span className="text-xs font-semibold">
-              {match.isHome ? "Domicile (Saint-Nicolas)" : "Extérieur"}
-            </span>
+      {/* Hero Match Stadium Card */}
+      <div className="card-elevated p-5 mb-4 anim-slide delay-1 relative overflow-hidden">
+        {/* Stadium lighting glow overlay */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-gradient-to-b from-primary/20 via-primary/5 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+        {/* Header Venue & Matchday */}
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-bg-surface border border-border-1 text-[11px] font-bold text-text-2">
+            <MapPin size={12} className="text-primary-text" />
+            <span>{match.isHome ? "Domicile (Complexe Chantecler)" : "Extérieur"}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-text-3">
-            <Clock size={12} />
-            <span className="text-xs font-semibold">{formatTime(match.dateTime)}</span>
+
+          <div className="flex items-center gap-1.5">
+            {votingOpen ? (
+              <span className="badge badge-open">
+                <span className="w-2 h-2 rounded-full bg-primary-text anim-pulse-glow" />
+                Votes ouverts
+              </span>
+            ) : (
+              <span className="badge badge-closed">
+                <Clock size={11} />
+                Fermé
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Teams Display with crisp logos */}
-        <div className="flex items-center justify-between gap-3 mb-5">
-          {/* BCSN Logo Box */}
+        {/* Teams Display with Pro Stadium Pods */}
+        <div className="flex items-center justify-between gap-3 mb-6 relative z-10">
+          {/* Team 1: BCSN */}
           <div
             onClick={() => setSelectedClubId("bcsn")}
             className="flex-1 flex flex-col items-center cursor-pointer group"
           >
-            <div className="w-16 h-16 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center mb-2 border border-border-1 group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-3xl bg-white p-2 shadow-xl flex items-center justify-center mb-2.5 border-2 border-primary/30 group-hover:scale-105 group-hover:border-primary transition-all overflow-hidden shrink-0 relative">
               <img
                 src={bcsnLogo}
                 alt="BCSN"
                 className="w-full h-full object-contain"
               />
+              <span className="absolute bottom-0 inset-x-0 bg-primary text-white text-[8px] font-black uppercase text-center py-0.5 tracking-wider">
+                DOMICILE
+              </span>
             </div>
-            <p className="text-xs font-bold text-text-1 leading-tight text-center">
-              Basket Club
-              <br />
-              de Saint Nicolas
+            <p className="text-xs font-black text-text-1 text-center leading-tight">
+              BCSN
             </p>
-            <span className="text-[10px] text-primary-text font-bold mt-1">Fiche Club →</span>
-          </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] font-extrabold text-text-4 uppercase tracking-widest bg-bg-surface px-2.5 py-1 rounded-md">
-              VS
+            <p className="text-[10px] text-text-3 font-semibold mt-0.5">Saint-Nicolas</p>
+            <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
+              Fiche Scout <ArrowRight size={10} />
             </span>
           </div>
 
-          {/* Opponent Logo Box */}
+          {/* VS Center Badge */}
+          <div className="flex flex-col items-center gap-1.5 shrink-0 px-1">
+            <div className="w-10 h-10 rounded-2xl bg-bg-surface border border-border-2 flex items-center justify-center font-black text-xs text-text-3 shadow-inner">
+              VS
+            </div>
+            <span className="text-[9px] font-bold text-text-4 uppercase tracking-wider">
+              {match.matchday > 0 ? `Journée ${match.matchday}` : "Choc FFBB"}
+            </span>
+          </div>
+
+          {/* Team 2: Opponent */}
           <div
             onClick={() => setSelectedClubId(match.opponent.split(" ")[0].toLowerCase())}
             className="flex-1 flex flex-col items-center cursor-pointer group"
           >
-            <div className="w-16 h-16 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center mb-2 border border-border-1 group-hover:scale-105 transition-transform overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-3xl bg-white p-2 shadow-xl flex items-center justify-center mb-2.5 border-2 border-border-2 group-hover:scale-105 group-hover:border-accent transition-all overflow-hidden shrink-0 relative">
               {activeOpponentLogo ? (
                 <img
                   src={activeOpponentLogo}
@@ -402,165 +451,162 @@ export default function ActiveMatchView({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="w-full h-full rounded-xl bg-accent-soft/30 flex items-center justify-center">
-                  <span className="text-2xl">🏀</span>
+                <div className="w-full h-full rounded-2xl bg-accent-soft/30 flex items-center justify-center">
+                  <span className="text-3xl">🏀</span>
                 </div>
               )}
+              <span className="absolute bottom-0 inset-x-0 bg-slate-800 text-white text-[8px] font-black uppercase text-center py-0.5 tracking-wider">
+                ADVERSAIRE
+              </span>
             </div>
-            <p className="text-xs font-bold text-text-1 leading-tight text-center max-w-[120px] truncate">
+            <p className="text-xs font-black text-text-1 text-center leading-tight truncate max-w-[120px]">
               {match.opponent}
             </p>
-            <span className="text-[10px] text-primary-text font-bold mt-1">Fiche Club →</span>
+            <p className="text-[10px] text-text-3 font-semibold mt-0.5">Visiteur</p>
+            <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
+              Fiche Scout <ArrowRight size={10} />
+            </span>
           </div>
         </div>
 
-        {/* Date & Countdown bar */}
-        <div className="bg-bg-surface rounded-xl px-4 py-2.5 flex items-center justify-between mb-4 border border-border-1">
-          <span className="text-xs text-text-2 capitalize font-bold">
-            {formatDate(match.dateTime)}
-          </span>
-          {countdown && (
-            <span className="text-xs font-bold text-primary-text tabular-nums">
-              {votingOpen ? `Clôture: ${countdown}` : `Ouverture dans: ${countdown}`}
+        {/* Date & Countdown Flip Bar */}
+        <div className="bg-bg-surface/90 backdrop-blur-md rounded-2xl px-4 py-3 flex items-center justify-between mb-4 border border-border-1 relative z-10">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-primary-text" />
+            <span className="text-xs text-text-1 capitalize font-extrabold">
+              {formatDate(match.dateTime)} · {formatTime(match.dateTime)}
             </span>
+          </div>
+          {countdown && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-black text-primary-text tabular-nums bg-primary-soft border border-primary/30 px-2 py-0.5 rounded-lg">
+                ⏳ {countdown}
+              </span>
+            </div>
           )}
         </div>
 
-        {/* MAIN CTA BUTTON: PLACER VOTRE PARI (VISIBLE UNIQUEMENT SI AUCUN PARI ENCORE PLACÉ) */}
+        {/* MAIN CTA BUTTON: PLACER MON PRONOSTIC */}
         {votingOpen && !existingPrediction && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary w-full py-3.5 text-sm font-extrabold flex items-center justify-center gap-2 shadow-xl bg-gradient-to-r from-primary via-emerald-500 to-indigo-600 hover:scale-[1.01] transition-all"
+            className="btn-primary w-full py-4 text-sm font-black flex items-center justify-center gap-2 shadow-xl relative z-10"
           >
             <Sparkles size={18} />
-            Placer votre pari
+            <span>Placer mon pronostic maintenant</span>
           </button>
         )}
       </div>
 
-      {/* Prediction already submitted (IMMUTABLE & LOCKED) - NOW PLACED ABOVE COMMUNITY TRENDS */}
+      {/* Prediction Ticket Receipt (Validated & Locked) */}
       {existingPrediction && (
-        <div className="card p-5 mb-4 anim-slide delay-2">
+        <div className="ticket-receipt p-5 mb-4 anim-slide delay-2 border border-primary/40 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CheckCircle size={16} className="text-primary-text" />
-              <h2 className="text-sm font-bold text-text-1">Votre pari enregistré</h2>
+              <div className="w-7 h-7 rounded-lg bg-primary-soft text-primary-text flex items-center justify-center font-black">
+                <CheckCircle size={16} />
+              </div>
+              <div>
+                <h3 className="text-xs font-black text-text-1">Votre Pronostic Officiel</h3>
+                <p className="text-[10px] text-text-3">Enregistré dans la base du club</p>
+              </div>
             </div>
-            <span className="badge badge-open text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              <Lock size={10} /> Pari définitif & verrouillé
+            <span className="badge badge-open text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <Lock size={10} /> Validé & Verrouillé
             </span>
           </div>
 
-          <div className="bg-bg-surface rounded-xl p-4 flex items-center justify-center gap-6 border border-border-1 mb-4">
+          <div className="bg-bg-surface rounded-2xl p-4 flex items-center justify-around border border-border-1 mb-4">
             <div className="text-center">
-              <p className="text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1">
+              <span className="text-[10px] font-extrabold text-primary-text uppercase tracking-wider block mb-1">
                 BCSN
-              </p>
-              <p className="text-3xl font-black text-text-1 tabular-nums">
+              </span>
+              <p className="text-4xl font-black text-text-1 tabular-nums font-mono">
                 {existingPrediction.predictedBcsn}
               </p>
             </div>
-            <span className="text-xl text-text-4 font-bold">–</span>
+            <span className="text-2xl text-text-4 font-bold">–</span>
             <div className="text-center">
-              <p className="text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1 max-w-[100px] truncate">
-                {match.opponent.split(" ")[0].toUpperCase()}
-              </p>
-              <p className="text-3xl font-black text-text-1 tabular-nums">
+              <span className="text-[10px] font-extrabold text-accent uppercase tracking-wider block mb-1 max-w-[100px] truncate">
+                {match.opponent.split(" ")[0]}
+              </span>
+              <p className="text-4xl font-black text-text-1 tabular-nums font-mono">
                 {existingPrediction.predictedOpponent}
               </p>
             </div>
           </div>
 
-          <p className="text-[11px] text-text-3 text-center mb-3 font-medium">
-            🔒 Votre pronostic est validé. Il ne peut plus être modifié.
-          </p>
-
           {/* Social Share Button */}
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="btn-secondary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 text-primary-text border-primary/30 hover:bg-primary-soft/20"
+            className="btn-primary w-full py-3 text-xs font-black flex items-center justify-center gap-2 shadow-lg"
           >
-            <Share2 size={15} />
-            Partager mon pronostic (WhatsApp / Insta)
+            <Share2 size={16} />
+            <span>Partager ma carte officielle (WhatsApp / Insta)</span>
           </button>
         </div>
       )}
 
-      {/* Community Trends Card (Tendances de la Communauté) */}
+      {/* Community Trends Duel Bar */}
       <div className="card p-4 mb-4 anim-slide delay-2 border border-border-1">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary-soft text-primary-text flex items-center justify-center">
-              <BarChart3 size={15} />
+            <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary-text flex items-center justify-center">
+              <BarChart3 size={16} />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-text-1">Tendances de la Communauté</h3>
-              <p className="text-[10px] text-text-4">Basé sur {totalVotes} pronostic{totalVotes > 1 ? "s" : ""}</p>
+              <h3 className="text-xs font-black text-text-1">Tendances de la Communauté</h3>
+              <p className="text-[10px] text-text-3">Basé sur {totalVotes} pronostic{totalVotes > 1 ? "s" : ""}</p>
             </div>
           </div>
-          <span className="text-xs font-black text-primary-text bg-primary-soft px-2 py-0.5 rounded-md">
+          <span className="text-xs font-black text-primary-text bg-primary-soft px-2.5 py-1 rounded-lg border border-primary/30">
             {bcsnWinPercent}% BCSN
           </span>
         </div>
 
-        {/* Dual Progress Bar */}
+        {/* Dual Athletic Progress Bar */}
         <div className="mb-3">
-          <div className="flex justify-between text-[11px] font-bold text-text-2 mb-1">
+          <div className="flex justify-between text-[11px] font-bold text-text-2 mb-1.5">
             <span className="text-primary-text">Victoire BCSN ({bcsnWinPercent}%)</span>
             <span className="text-accent">{oppWinPercent}% {match.opponent.split(" ")[0]}</span>
           </div>
-          <div className="w-full h-3 bg-bg-surface rounded-full overflow-hidden flex border border-border-1 p-0.5">
+          <div className="w-full h-3.5 bg-bg-surface rounded-full overflow-hidden flex border border-border-1 p-0.5">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-primary rounded-l-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary-dark rounded-l-full transition-all duration-500 shadow-sm"
               style={{ width: `${bcsnWinPercent}%` }}
             />
             <div
-              className="h-full bg-gradient-to-r from-accent to-rose-600 rounded-r-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-accent via-rose-500 to-red-600 rounded-r-full transition-all duration-500 shadow-sm"
               style={{ width: `${oppWinPercent}%` }}
             />
           </div>
         </div>
 
-        {/* Average predicted score */}
-        <div className="bg-bg-surface p-2.5 rounded-xl flex items-center justify-between border border-border-1 text-xs">
+        {/* Average projected score */}
+        <div className="bg-bg-surface p-3 rounded-xl flex items-center justify-between border border-border-1 text-xs">
           <span className="text-text-3 font-semibold flex items-center gap-1.5">
             <TrendingUp size={14} className="text-primary-text" />
-            Score moyen pronostiqué :
+            Score moyen anticipé :
           </span>
           <span className="font-black text-text-1 tabular-nums">
-            BCSN <strong className="text-primary-text">{avgBcsnScore}</strong> – <strong className="text-text-1">{avgOppScore}</strong> {match.opponent.split(" ")[0]}
+            BCSN <strong className="text-primary-text">{avgBcsnScore}</strong> – <strong className="text-accent">{avgOppScore}</strong> {match.opponent.split(" ")[0]}
           </span>
         </div>
       </div>
 
-      {/* Not voted and voting closed */}
-      {!votingOpen && !existingPrediction && (
-        <div className="card p-5 mb-4 anim-slide delay-2 text-center">
-          <div className="w-10 h-10 mx-auto rounded-xl bg-bg-surface flex items-center justify-center mb-3">
-            <CalendarClock size={20} className="text-primary-text" />
-          </div>
-          <h3 className="text-sm font-bold text-text-1 mb-1">
-            Les votes ouvrent bientôt !
-          </h3>
-          <p className="text-xs text-text-3 mb-3">
-            Rendez-vous le <strong className="text-text-1">{formatFullDateTime(active.opensAt)}</strong> pour valider votre pronostic.
-          </p>
-          <div className="bg-bg-surface rounded-xl p-3 text-xs text-text-3 inline-block border border-border-1">
-            ⏳ Heure du match : <span className="font-bold text-text-1">{formatFullDateTime(match.dateTime)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming matches schedule */}
+      {/* Upcoming matches schedule timeline */}
       {upcomingMatches.length > 0 && (
         <div className="mt-6 anim-slide delay-3">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar size={14} className="text-text-3" />
-            <h3 className="text-xs font-semibold text-text-3 uppercase tracking-wider">
-              Calendrier des prochains matchs ({upcomingMatches.length})
-            </h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={15} className="text-primary-text" />
+              <h3 className="text-xs font-black text-text-1 uppercase tracking-wider">
+                Calendrier des Rencontres ({upcomingMatches.length})
+              </h3>
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col gap-2.5">
             {upcomingMatches.map((m) => {
               const opensAtDate = getMatchOpeningDate(m.dateTime);
               const isCurrent = m.id === match.id;
@@ -570,25 +616,24 @@ export default function ActiveMatchView({
                 <div
                   key={m.id}
                   onClick={() => setSelectedClubId(m.opponent.split(" ")[0].toLowerCase())}
-                  className={`card p-3 flex items-center justify-between cursor-pointer hover:border-primary/40 transition-all ${
+                  className={`card p-3.5 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all ${
                     isCurrent ? "ring-2 ring-primary/40 bg-primary-soft/10" : ""
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
                       {oppLogo ? (
                         <img src={oppLogo} alt={m.opponent} className="w-full h-full object-contain" />
                       ) : (
-                        <span className="text-sm">🏀</span>
+                        <span className="text-base">🏀</span>
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-text-1 flex items-center gap-1">
+                      <p className="text-xs font-extrabold text-text-1 flex items-center gap-1">
                         {m.matchday > 0 ? `J${m.matchday} · ` : ""}
                         {m.isHome ? `vs ${m.opponent}` : `à ${m.opponent}`}
-                        <Info size={11} className="text-text-4" />
                       </p>
-                      <p className="text-[10px] text-text-4 mt-0.5">
+                      <p className="text-[10px] text-text-3 font-semibold mt-0.5">
                         {m.isHome ? "Domicile" : "Extérieur"} · {formatTime(m.dateTime)}
                       </p>
                     </div>
@@ -596,11 +641,11 @@ export default function ActiveMatchView({
 
                   <div className="text-right">
                     {isCurrent && votingOpen ? (
-                      <span className="badge badge-open text-[10px]">
+                      <span className="badge badge-open text-[9px]">
                         En cours
                       </span>
                     ) : (
-                      <span className="text-[10px] text-text-4 font-medium block">
+                      <span className="text-[10px] text-text-4 font-bold block">
                         Votes le {opensAtDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                       </span>
                     )}
@@ -612,16 +657,17 @@ export default function ActiveMatchView({
         </div>
       )}
 
-      {/* Recent past matches */}
+      {/* Recent Match Results */}
       {pastMatches.length > 0 && (
-        <div className="mt-6 mb-6 anim-slide delay-4">
+        <div className="mt-6 anim-slide delay-4">
           <div className="flex items-center gap-2 mb-3">
-            <History size={14} className="text-text-3" />
-            <h3 className="text-xs font-semibold text-text-3 uppercase tracking-wider">
-              Résultats récents
+            <History size={15} className="text-primary-text" />
+            <h3 className="text-xs font-black text-text-1 uppercase tracking-wider">
+              Derniers Résultats du Club
             </h3>
           </div>
-          <div className="flex flex-col gap-2">
+
+          <div className="flex flex-col gap-2.5">
             {pastMatches.map((m, i) => {
               const won =
                 m.scoreBcsn !== null &&
@@ -637,20 +683,15 @@ export default function ActiveMatchView({
                 <div
                   key={m.id}
                   onClick={() => setSelectedClubId(m.opponent.split(" ")[0].toLowerCase())}
-                  className="card px-4 py-3 flex items-center justify-between cursor-pointer hover:border-primary/40 transition-all anim-fade"
-                  style={{ animationDelay: `${300 + i * 60}ms` }}
+                  className="card px-4 py-3 flex items-center justify-between cursor-pointer hover:border-primary/40 transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-1.5 h-8 rounded-full ${
-                        won
-                          ? "bg-primary"
-                          : lost
-                          ? "bg-accent"
-                          : "bg-text-4"
+                      className={`w-2 h-9 rounded-full ${
+                        won ? "bg-primary shadow-[0_0_8px_#10B981]" : lost ? "bg-accent shadow-[0_0_8px_#F43F5E]" : "bg-text-4"
                       }`}
                     />
-                    <div className="w-9 h-9 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
                       {oppLogo ? (
                         <img src={oppLogo} alt={m.opponent} className="w-full h-full object-contain" />
                       ) : (
@@ -658,13 +699,13 @@ export default function ActiveMatchView({
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-text-1">
-                        {m.isHome ? "BCSN" : m.opponent}
-                        <span className="text-text-3 font-normal mx-1">vs</span>
+                      <p className="text-xs font-bold text-text-1">
+                        {m.isHome ? "BCSN" : m.opponent}{" "}
+                        <span className="text-text-4 font-normal">vs</span>{" "}
                         {m.isHome ? m.opponent : "BCSN"}
                       </p>
-                      <p className="text-[10px] text-text-4 mt-0.5">
-                        {m.matchday > 0 ? `J${m.matchday} · ` : ""}
+                      <p className="text-[10px] text-text-4 font-medium mt-0.5">
+                        {m.matchday > 0 ? `Journée ${m.matchday} · ` : ""}
                         {new Date(m.dateTime).toLocaleDateString("fr-FR", {
                           day: "numeric",
                           month: "short",
@@ -672,9 +713,15 @@ export default function ActiveMatchView({
                       </p>
                     </div>
                   </div>
-                  <span className="text-base font-bold text-text-1 tabular-nums">
-                    {m.scoreBcsn} – {m.scoreOpponent}
-                  </span>
+
+                  <div className="text-right">
+                    <span className="text-sm font-black text-text-1 tabular-nums">
+                      {m.scoreBcsn} – {m.scoreOpponent}
+                    </span>
+                    <span className={`text-[9px] font-black uppercase block ${won ? "text-primary-text" : "text-accent"}`}>
+                      {won ? "Victoire" : "Défaite"}
+                    </span>
+                  </div>
                 </div>
               );
             })}

@@ -15,6 +15,7 @@ import {
   MapPin,
   ChevronRight,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { submitMatchResult, createMatch } from "@/lib/actions";
 import { getClubLogoPath } from "@/lib/clubsData";
@@ -39,7 +40,7 @@ export default function AdminScoresView({ matches }: Props) {
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"next" | "upcoming" | "finished" | "add">("next");
 
-  // State for score entries: matchId -> { bcsn, opp }
+  // State for score entries
   const [scores, setScores] = useState<Record<number, { bcsn: number; opp: number }>>({});
   const [editingMatchId, setEditingMatchId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ id: number; type: "success" | "error"; text: string } | null>(null);
@@ -113,506 +114,429 @@ export default function AdminScoresView({ matches }: Props) {
   };
 
   return (
-    <div className="px-5 pt-6 pb-16">
+    <div className="px-4 pt-4 pb-16">
       {/* Top Bar */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.push("/profil")}
-          className="flex items-center gap-1.5 text-xs font-semibold text-text-3 hover:text-text-1 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-bold text-text-3 hover:text-text-1 transition-colors"
         >
           <ArrowLeft size={16} />
-          Retour au Profil
+          <span>Retour au Profil</span>
         </button>
-        <span className="badge badge-joueur text-[10px] bg-primary-soft text-primary-text font-bold">
-          ADMIN
+        <span className="badge badge-joueur text-[9px] bg-indigo-600/20 text-indigo-400 border-indigo-500/40 font-bold">
+          ADMIN COCKPIT
         </span>
       </div>
 
-      {/* Admin Hero Header */}
-      <div className="card-elevated p-5 mb-5 bg-gradient-to-br from-slate-900 via-primary-dark to-indigo-950 text-white shadow-xl anim-slide">
+      {/* Hero Header */}
+      <div className="card-elevated p-5 mb-5 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white border border-indigo-500/30 shadow-2xl anim-slide">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-gold">
-            <ShieldCheck size={22} />
+          <div className="w-11 h-11 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 backdrop-blur-md flex items-center justify-center text-gold shadow-md">
+            <ShieldCheck size={24} />
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tight leading-none">Gestion des Scores</h1>
-            <p className="text-xs text-white/70 mt-1">
-              Validation des résultats & Recalcul du classement
+            <h1 className="text-lg font-black tracking-tight leading-tight">Gestion des Scores</h1>
+            <p className="text-xs text-white/70 mt-0.5">
+              Validation des résultats & Recalcul automatique des points
             </p>
           </div>
         </div>
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-1 bg-bg-surface p-1.5 rounded-2xl mb-6 border border-border-1 overflow-x-auto text-xs font-bold shadow-inner">
+      {/* Navigation Sub-Tabs */}
+      <div className="grid grid-cols-4 gap-1 p-1 bg-bg-surface rounded-2xl border border-border-1 mb-5 text-center text-xs font-bold">
         <button
           onClick={() => setActiveTab("next")}
-          className={`flex-1 py-2 px-3 rounded-xl transition-all whitespace-nowrap text-center ${
+          className={`py-2 rounded-xl transition-all ${
             activeTab === "next"
-              ? "bg-primary text-white shadow-md"
-              : "text-text-3 hover:text-text-1"
+              ? "bg-bg-card text-text-1 shadow-md border border-border-2 font-black"
+              : "text-text-3 hover:text-text-2"
           }`}
         >
-          ⚡ Prochain Match
+          À Valider
         </button>
-
         <button
           onClick={() => setActiveTab("upcoming")}
-          className={`flex-1 py-2 px-3 rounded-xl transition-all whitespace-nowrap text-center ${
+          className={`py-2 rounded-xl transition-all ${
             activeTab === "upcoming"
-              ? "bg-primary text-white shadow-md"
-              : "text-text-3 hover:text-text-1"
+              ? "bg-bg-card text-text-1 shadow-md border border-border-2 font-black"
+              : "text-text-3 hover:text-text-2"
           }`}
         >
-          📅 À venir ({pendingMatches.length})
+          À Venir ({pendingMatches.length})
         </button>
-
         <button
           onClick={() => setActiveTab("finished")}
-          className={`flex-1 py-2 px-3 rounded-xl transition-all whitespace-nowrap text-center ${
+          className={`py-2 rounded-xl transition-all ${
             activeTab === "finished"
-              ? "bg-primary text-white shadow-md"
-              : "text-text-3 hover:text-text-1"
+              ? "bg-bg-card text-text-1 shadow-md border border-border-2 font-black"
+              : "text-text-3 hover:text-text-2"
           }`}
         >
-          ✅ Terminés ({finishedMatches.length})
+          Terminés ({finishedMatches.length})
         </button>
-
         <button
           onClick={() => setActiveTab("add")}
-          className={`py-2 px-3 rounded-xl transition-all whitespace-nowrap text-center ${
+          className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1 ${
             activeTab === "add"
-              ? "bg-primary text-white shadow-md"
-              : "text-text-3 hover:text-text-1"
+              ? "bg-primary text-white shadow-md font-black"
+              : "text-primary-text hover:text-primary"
           }`}
         >
-          ➕ Ajouter
+          <PlusCircle size={13} />
+          <span>Créer</span>
         </button>
       </div>
 
-      {/* TAB 1: NEXT MATCH HERO SCORE ENTRY */}
+      {/* Tab 1: Prochain Match à Valider */}
       {activeTab === "next" && (
-        <div className="anim-fade">
+        <div className="anim-fade space-y-4">
           {nextMatch ? (
-            <div className="card p-5 mb-4 shadow-lg border-2 border-primary/20">
+            <div className="card-elevated p-5 border border-primary/40 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <span className="badge badge-open text-[10px]">
-                  {nextMatch.matchday > 0 ? `Journée ${nextMatch.matchday}` : "Amical / Coupe"}
+                <span className="badge badge-open text-[9px]">
+                  Match en attente de score
                 </span>
-                <span className="text-xs text-text-3 flex items-center gap-1 font-semibold">
-                  <MapPin size={12} />
-                  {nextMatch.isHome ? "Domicile (St-Nicolas)" : "Extérieur"}
+                <span className="text-[11px] font-bold text-text-3">
+                  {nextMatch.matchday > 0 ? `Journée ${nextMatch.matchday}` : "Choc FFBB"}
                 </span>
               </div>
 
-              {/* Match Teams Header */}
-              <div className="flex items-center justify-between gap-4 mb-6">
-                {/* BCSN Logo & Info */}
+              <div className="flex items-center justify-around gap-2 mb-6">
+                {/* BCSN */}
                 <div className="flex-1 text-center">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center mb-2 border border-border-1 overflow-hidden">
-                    <img
-                      src={getClubLogoPath("bcsn") || "/logos/bcsn.jpg"}
-                      alt="BCSN"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <p className="text-xs font-black text-text-1">BCSN</p>
-                </div>
-
-                <span className="text-sm font-extrabold text-text-4 bg-bg-surface px-2.5 py-1 rounded-md">
-                  VS
-                </span>
-
-                {/* Opponent Logo & Info */}
-                <div className="flex-1 text-center">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center mb-2 border border-border-1 overflow-hidden">
-                    {getClubLogoPath(nextMatch.opponent) ? (
-                      <img
-                        src={getClubLogoPath(nextMatch.opponent)!}
-                        alt={nextMatch.opponent}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-2xl">🏀</span>
-                    )}
-                  </div>
-                  <p className="text-xs font-black text-text-1 truncate max-w-[110px] mx-auto">
-                    {nextMatch.opponent}
-                  </p>
-                </div>
-              </div>
-
-              {/* Score Input Stepper Controls */}
-              <div className="bg-bg-surface rounded-2xl p-4 mb-5 border border-border-1">
-                <p className="text-xs text-center font-bold text-text-3 uppercase tracking-wider mb-3">
-                  Saisie du Score Final
-                </p>
-
-                <div className="flex items-center justify-around gap-3">
-                  {/* BCSN Score Controls */}
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-text-2">BCSN</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() =>
-                          updateScore(nextMatch.id, "bcsn", getScore(nextMatch).bcsn - 1)
-                        }
-                        className="w-9 h-9 rounded-xl bg-bg-card border border-border-1 flex items-center justify-center font-black text-lg hover:bg-bg-card-hover"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        value={getScore(nextMatch).bcsn}
-                        onChange={(e) =>
-                          updateScore(nextMatch.id, "bcsn", Number(e.target.value))
-                        }
-                        className="w-16 h-12 text-center text-2xl font-black bg-white text-slate-900 border-2 border-primary rounded-xl shadow-inner focus:outline-none"
-                      />
-                      <button
-                        onClick={() =>
-                          updateScore(nextMatch.id, "bcsn", getScore(nextMatch).bcsn + 1)
-                        }
-                        className="w-9 h-9 rounded-xl bg-bg-card border border-border-1 flex items-center justify-center font-black text-lg hover:bg-bg-card-hover"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <span className="text-xl font-black text-text-4 mt-5">–</span>
-
-                  {/* Opponent Score Controls */}
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-text-2 truncate max-w-[90px]">
-                      {nextMatch.opponent.split(" ")[0]}
+                  <p className="text-xs font-black text-primary-text uppercase mb-2">BCSN</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateScore(nextMatch.id, "bcsn", getScore(nextMatch).bcsn - 1)}
+                      className="w-8 h-8 rounded-xl bg-bg-surface border border-border-1 text-text-2 font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="text-3xl font-black text-text-1 tabular-nums font-mono">
+                      {getScore(nextMatch).bcsn}
                     </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() =>
-                          updateScore(nextMatch.id, "opp", getScore(nextMatch).opp - 1)
-                        }
-                        className="w-9 h-9 rounded-xl bg-bg-card border border-border-1 flex items-center justify-center font-black text-lg hover:bg-bg-card-hover"
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        value={getScore(nextMatch).opp}
-                        onChange={(e) =>
-                          updateScore(nextMatch.id, "opp", Number(e.target.value))
-                        }
-                        className="w-16 h-12 text-center text-2xl font-black bg-white text-slate-900 border-2 border-primary rounded-xl shadow-inner focus:outline-none"
-                      />
-                      <button
-                        onClick={() =>
-                          updateScore(nextMatch.id, "opp", getScore(nextMatch).opp + 1)
-                        }
-                        className="w-9 h-9 rounded-xl bg-bg-card border border-border-1 flex items-center justify-center font-black text-lg hover:bg-bg-card-hover"
-                      >
-                        +
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateScore(nextMatch.id, "bcsn", getScore(nextMatch).bcsn + 1)}
+                      className="w-8 h-8 rounded-xl bg-primary text-white font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <span className="text-2xl text-text-4 font-bold">–</span>
+
+                {/* Opponent */}
+                <div className="flex-1 text-center">
+                  <p className="text-xs font-black text-accent uppercase mb-2 truncate">
+                    {nextMatch.opponent.split(" ")[0]}
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateScore(nextMatch.id, "opp", getScore(nextMatch).opp - 1)}
+                      className="w-8 h-8 rounded-xl bg-bg-surface border border-border-1 text-text-2 font-bold"
+                    >
+                      -
+                    </button>
+                    <span className="text-3xl font-black text-text-1 tabular-nums font-mono">
+                      {getScore(nextMatch).opp}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateScore(nextMatch.id, "opp", getScore(nextMatch).opp + 1)}
+                      className="w-8 h-8 rounded-xl bg-primary text-white font-bold"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Feedback Message */}
-              {message?.id === nextMatch.id && (
-                <div
-                  className={`flex items-center gap-2 p-3 rounded-xl mb-4 text-xs font-medium ${
-                    message.type === "success"
-                      ? "bg-primary-soft text-primary-text"
-                      : "bg-accent-soft text-accent"
-                  }`}
-                >
+              {message && message.id === nextMatch.id && (
+                <div className={`p-3 rounded-xl mb-4 text-xs font-bold flex items-center gap-2 ${
+                  message.type === "success" ? "bg-primary-soft text-primary-text" : "bg-accent-soft text-accent"
+                }`}>
                   {message.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-                  {message.text}
+                  <span>{message.text}</span>
                 </div>
               )}
 
-              {/* Save Button */}
               <button
                 onClick={() => handleSaveResult(nextMatch.id)}
                 disabled={isPending}
-                className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2 font-bold shadow-lg"
+                className="btn-primary w-full py-3.5 text-xs font-black flex items-center justify-center gap-2 shadow-xl"
               >
-                <CheckCircle size={18} />
-                {isPending ? "Clôture en cours..." : "Valider et Clôturer ce match"}
+                <CheckCircle size={16} />
+                <span>{isPending ? "Calcul & Redistribution..." : "Valider le Score & Clôturer le Match"}</span>
               </button>
             </div>
           ) : (
             <div className="card p-8 text-center text-text-3 text-xs">
-              <Sparkles size={24} className="mx-auto mb-2 text-primary-text opacity-70" />
-              Tous les matchs programmés ont déjà été clôturés !
+              Aucun match en attente de score.
             </div>
           )}
         </div>
       )}
 
-      {/* TAB 2: UPCOMING MATCHES SCHEDULE */}
+      {/* Tab 2: À Venir */}
       {activeTab === "upcoming" && (
-        <div className="space-y-3 anim-fade">
-          {pendingMatches.length === 0 ? (
-            <div className="card p-6 text-center text-text-3 text-xs">
-              Aucun match à venir dans le calendrier.
-            </div>
-          ) : (
-            pendingMatches.map((m) => {
-              const current = getScore(m);
-              const oppLogo = getClubLogoPath(m.opponent);
+        <div className="anim-fade space-y-3">
+          {pendingMatches.map((m) => {
+            const oppLogo = getClubLogoPath(m.opponent);
+            const isEditing = editingMatchId === m.id;
 
-              return (
-                <div key={m.id} className="card p-4">
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-border-1">
-                    <span className="badge badge-open text-[10px]">
-                      {m.matchday > 0 ? `Journée ${m.matchday}` : "Amical"}
-                    </span>
-                    <span className="text-xs text-text-3">
-                      {new Date(m.dateTime).toLocaleDateString("fr-FR", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
-                        {oppLogo ? (
-                          <img src={oppLogo} alt={m.opponent} className="w-full h-full object-contain" />
-                        ) : (
-                          <span>🏀</span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-text-1">
-                          {m.isHome ? `BCSN vs ${m.opponent}` : `${m.opponent} vs BCSN`}
-                        </p>
-                        <p className="text-[10px] text-text-4">
-                          {m.isHome ? "Domicile" : "Extérieur"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setActiveTab("next");
-                      }}
-                      className="btn-secondary text-[11px] py-1.5 px-3 flex items-center gap-1"
-                    >
-                      Saisir score <ChevronRight size={12} />
-                    </button>
-                  </div>
+            return (
+              <div key={m.id} className="card p-4 border border-border-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-text-4">
+                    {m.matchday > 0 ? `Journée ${m.matchday}` : "Amical / Coupe"} · {new Date(m.dateTime).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  </span>
+                  <span className="badge badge-open text-[9px]">À venir</span>
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
 
-      {/* TAB 3: FINISHED MATCHES WITH FULL RE-EDIT CAPABILITY */}
-      {activeTab === "finished" && (
-        <div className="space-y-3 anim-fade">
-          {finishedMatches.length === 0 ? (
-            <div className="card p-6 text-center text-text-3 text-xs">
-              Aucun match terminé enregistré.
-            </div>
-          ) : (
-            finishedMatches.map((m) => {
-              const oppLogo = getClubLogoPath(m.opponent);
-              const isEditing = editingMatchId === m.id;
-              const current = getScore(m);
-              const msg = message?.id === m.id ? message : null;
-
-              return (
-                <div key={m.id} className="card p-4 transition-all">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-text-4 uppercase tracking-wider">
-                      {m.matchday > 0 ? `Journée ${m.matchday}` : "Amical"} ·{" "}
-                      {new Date(m.dateTime).toLocaleDateString("fr-FR", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </span>
-                    <span className="badge badge-joueur text-[9px] bg-primary-soft text-primary-text">
-                      Terminé
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
-                        {oppLogo ? (
-                          <img src={oppLogo} alt={m.opponent} className="w-full h-full object-contain" />
-                        ) : (
-                          <span>🏀</span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-text-1">
-                          {m.isHome ? `BCSN vs ${m.opponent}` : `${m.opponent} vs BCSN`}
-                        </p>
-                        <p className="text-[10px] text-text-4 font-bold text-primary-text">
-                          Score : {m.scoreBcsn} – {m.scoreOpponent}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setEditingMatchId(isEditing ? null : m.id)}
-                      className="btn-secondary text-[11px] py-1.5 px-3 flex items-center gap-1 text-primary-text border-primary/30"
-                    >
-                      <Edit3 size={13} />
-                      {isEditing ? "Fermer" : "Modifier score"}
-                    </button>
-                  </div>
-
-                  {/* Inline Re-edit Box */}
-                  {isEditing && (
-                    <div className="mt-4 pt-3 border-t border-border-1 bg-bg-surface p-3.5 rounded-xl anim-slide">
-                      <p className="text-xs font-bold text-text-2 mb-3">
-                        Modifier le score final (Recalcule tous les points) :
-                      </p>
-
-                      <div className="flex items-center justify-center gap-4 mb-3">
-                        <div className="text-center">
-                          <label className="text-[10px] font-bold text-text-3 block mb-1">BCSN</label>
-                          <input
-                            type="number"
-                            value={current.bcsn}
-                            onChange={(e) => updateScore(m.id, "bcsn", Number(e.target.value))}
-                            className="w-16 h-10 text-center text-lg font-black bg-white text-slate-900 border border-border-1 rounded-xl focus:border-primary focus:outline-none"
-                          />
-                        </div>
-
-                        <span className="text-lg font-bold text-text-4 mt-4">–</span>
-
-                        <div className="text-center">
-                          <label className="text-[10px] font-bold text-text-3 block mb-1 truncate max-w-[80px]">
-                            {m.opponent.split(" ")[0]}
-                          </label>
-                          <input
-                            type="number"
-                            value={current.opp}
-                            onChange={(e) => updateScore(m.id, "opp", Number(e.target.value))}
-                            className="w-16 h-10 text-center text-lg font-black bg-white text-slate-900 border border-border-1 rounded-xl focus:border-primary focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      {msg && (
-                        <div
-                          className={`flex items-center gap-2 p-2 rounded-lg mb-3 text-xs font-medium ${
-                            msg.type === "success"
-                              ? "bg-primary-soft text-primary-text"
-                              : "bg-accent-soft text-accent"
-                          }`}
-                        >
-                          {msg.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-                          {msg.text}
-                        </div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
+                      {oppLogo ? (
+                        <img src={oppLogo} alt="" className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-xs">🏀</span>
                       )}
-
-                      <button
-                        onClick={() => handleSaveResult(m.id)}
-                        disabled={isPending}
-                        className="btn-primary w-full py-2 text-xs flex items-center justify-center gap-1.5"
-                      >
-                        <CheckCircle size={14} />
-                        {isPending ? "Mise à jour..." : "Enregistrer la modification"}
-                      </button>
                     </div>
-                  )}
+                    <div>
+                      <p className="text-xs font-black text-text-1">
+                        {m.isHome ? "BCSN" : m.opponent} vs {m.isHome ? m.opponent : "BCSN"}
+                      </p>
+                      <p className="text-[10px] text-text-3 font-semibold">
+                        {m.isHome ? "Domicile" : "Extérieur"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setEditingMatchId(isEditing ? null : m.id)}
+                    className="px-3 py-1.5 rounded-xl bg-bg-surface hover:bg-bg-card-hover border border-border-1 text-xs font-bold text-text-2 flex items-center gap-1"
+                  >
+                    <Edit3 size={13} />
+                    <span>{isEditing ? "Fermer" : "Saisir score"}</span>
+                  </button>
                 </div>
-              );
-            })
-          )}
+
+                {/* Inline Score Entry */}
+                {isEditing && (
+                  <div className="pt-3 border-t border-border-1 anim-slide">
+                    <div className="flex items-center justify-around gap-2 mb-4 bg-bg-surface p-3 rounded-2xl">
+                      <div className="text-center">
+                        <span className="text-[10px] font-bold text-primary-text uppercase block mb-1">BCSN</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateScore(m.id, "bcsn", getScore(m).bcsn - 1)}
+                            className="w-7 h-7 rounded-lg bg-bg-card border border-border-1 text-xs font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="text-xl font-black text-text-1 tabular-nums font-mono px-1">
+                            {getScore(m).bcsn}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateScore(m.id, "bcsn", getScore(m).bcsn + 1)}
+                            className="w-7 h-7 rounded-lg bg-primary text-white text-xs font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <span className="text-xl text-text-4 font-bold">–</span>
+
+                      <div className="text-center">
+                        <span className="text-[10px] font-bold text-accent uppercase block mb-1 truncate max-w-[80px]">
+                          {m.opponent.split(" ")[0]}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateScore(m.id, "opp", getScore(m).opp - 1)}
+                            className="w-7 h-7 rounded-lg bg-bg-card border border-border-1 text-xs font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="text-xl font-black text-text-1 tabular-nums font-mono px-1">
+                            {getScore(m).opp}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateScore(m.id, "opp", getScore(m).opp + 1)}
+                            className="w-7 h-7 rounded-lg bg-primary text-white text-xs font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleSaveResult(m.id)}
+                      disabled={isPending}
+                      className="btn-primary w-full py-2.5 text-xs font-black flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle size={14} />
+                      <span>Valider & Clôturer ce match</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* TAB 4: ADD NEW MATCH FORM */}
+      {/* Tab 3: Matchs Terminés */}
+      {activeTab === "finished" && (
+        <div className="anim-fade space-y-3">
+          {finishedMatches.map((m) => {
+            const oppLogo = getClubLogoPath(m.opponent);
+
+            return (
+              <div key={m.id} className="card p-4 border border-border-1 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm border border-border-1 flex items-center justify-center overflow-hidden shrink-0">
+                    {oppLogo ? (
+                      <img src={oppLogo} alt="" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-xs">🏀</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-text-1">
+                      {m.isHome ? "BCSN" : m.opponent} vs {m.isHome ? m.opponent : "BCSN"}
+                    </p>
+                    <p className="text-[10px] text-text-4">
+                      {m.matchday > 0 ? `Journée ${m.matchday} · ` : ""}
+                      {new Date(m.dateTime).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-base font-black text-text-1 tabular-nums font-mono">
+                    {m.scoreBcsn} - {m.scoreOpponent}
+                  </span>
+                  <span className="badge badge-open text-[8px] block mt-0.5">
+                    Clôturé
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tab 4: Programmer un Match */}
       {activeTab === "add" && (
-        <form onSubmit={handleCreateMatch} className="card p-5 space-y-4 anim-fade">
-          <h3 className="text-sm font-bold text-text-1 mb-1">
-            Programmer un nouveau match au calendrier
+        <form onSubmit={handleCreateMatch} className="card-elevated p-5 space-y-4 anim-scale border border-border-2">
+          <h3 className="text-sm font-black text-text-1 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <PlusCircle size={16} className="text-primary-text" />
+            Ajouter une Nouvelle Rencontre
           </h3>
 
           <div>
-            <label className="text-xs font-semibold text-text-3 block mb-1">
-              Nom du club adversaire
+            <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-1">
+              Nom de l&apos;équipe adverse
             </label>
             <input
               type="text"
-              required
-              placeholder="Ex: Orchies / Lambersart"
               value={newOpponent}
               onChange={(e) => setNewOpponent(e.target.value)}
-              className="input-field py-2.5 text-xs"
+              placeholder="Ex: Longueau, Gouvieux, Margny..."
+              className="input text-xs"
+              required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-text-3 block mb-1">
-                Journée (0 = Amical/Coupe)
+              <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-1">
+                Date du match
+              </label>
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="input text-xs"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-1">
+                Heure du coup d&apos;envoi
+              </label>
+              <input
+                type="time"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="input text-xs"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-1">
+                Lieu du match
+              </label>
+              <div className="flex gap-1 bg-bg-surface p-1 rounded-xl border border-border-1">
+                <button
+                  type="button"
+                  onClick={() => setNewIsHome(true)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    newIsHome ? "bg-primary text-white shadow-sm font-black" : "text-text-4"
+                  }`}
+                >
+                  Domicile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewIsHome(false)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    !newIsHome ? "bg-slate-700 text-white shadow-sm font-black" : "text-text-4"
+                  }`}
+                >
+                  Extérieur
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-1">
+                N° de Journée (0 si amical)
               </label>
               <input
                 type="number"
                 value={newMatchday}
                 onChange={(e) => setNewMatchday(Number(e.target.value))}
-                className="input-field py-2.5 text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-text-3 block mb-1">Heure</label>
-              <input
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-                className="input-field py-2.5 text-xs"
+                min={0}
+                max={30}
+                className="input text-xs font-mono"
               />
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-text-3 block mb-1">Date du match</label>
-            <input
-              type="date"
-              required
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-              className="input-field py-2.5 text-xs"
-            />
-          </div>
-
-          <div className="flex items-center gap-6 text-xs pt-1">
-            <label className="flex items-center gap-2 cursor-pointer font-semibold text-text-2">
-              <input
-                type="radio"
-                name="isHome"
-                checked={newIsHome}
-                onChange={() => setNewIsHome(true)}
-              />
-              Domicile (BCSN)
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer font-semibold text-text-2">
-              <input
-                type="radio"
-                name="isHome"
-                checked={!newIsHome}
-                onChange={() => setNewIsHome(false)}
-              />
-              Extérieur
-            </label>
-          </div>
-
-          <button type="submit" disabled={isPending} className="btn-primary py-3 text-xs w-full font-bold">
-            {isPending ? "Ajout en cours..." : "Ajouter le match au calendrier"}
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn-primary w-full py-3 text-xs font-black flex items-center justify-center gap-2 shadow-xl mt-2"
+          >
+            <PlusCircle size={16} />
+            <span>{isPending ? "Création en cours..." : "Programmer la Rencontre"}</span>
           </button>
         </form>
       )}

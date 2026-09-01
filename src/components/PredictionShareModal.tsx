@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-import { X, Share2, Download, Copy, Check, Sparkles } from "lucide-react";
-import { getClubLogoPath } from "@/lib/clubsData";
+import { useEffect, useState } from "react";
+import { X, Share2, Download, Copy, Check, Sparkles, Trophy } from "lucide-react";
 
 interface Props {
   isOpen: boolean;
@@ -27,122 +26,130 @@ export default function PredictionShareModal({
   matchDate,
   isHome,
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    // Draw card on HTML5 Canvas (600x600 px high quality)
+    // Draw high-resolution social card on HTML5 Canvas (800x800 px)
     const canvas = document.createElement("canvas");
-    canvas.width = 600;
-    canvas.height = 600;
+    canvas.width = 800;
+    canvas.height = 800;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Background Gradient (Dark Emerald to Midnight Slate)
-    const bgGradient = ctx.createLinearGradient(0, 0, 600, 600);
-    bgGradient.addColorStop(0, "#064e3b");
-    bgGradient.addColorStop(0.5, "#090d16");
-    bgGradient.addColorStop(1, "#022c22");
+    // Background Gradient (Deep Obsidian Night to Stadium Emerald)
+    const bgGradient = ctx.createRadialGradient(400, 200, 50, 400, 400, 500);
+    bgGradient.addColorStop(0, "#0E2A20");
+    bgGradient.addColorStop(0.5, "#070D18");
+    bgGradient.addColorStop(1, "#03060B");
     ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, 600, 600);
+    ctx.fillRect(0, 0, 800, 800);
 
-    // Decorative background circles
-    ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
+    // Decorative stadium court lines & aura
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.12)";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(100, 100, 180, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(400, 400, 260, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
     ctx.beginPath();
-    ctx.arc(500, 500, 220, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(50, 400);
+    ctx.lineTo(750, 400);
+    ctx.stroke();
 
     // Central Card Container
-    ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-    ctx.strokeStyle = "rgba(16, 185, 129, 0.3)";
+    ctx.fillStyle = "rgba(14, 21, 36, 0.88)";
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(40, 40, 520, 520, 32);
+    ctx.roundRect(50, 50, 700, 700, 36);
     ctx.fill();
     ctx.stroke();
 
     // Top Header Badge
-    ctx.fillStyle = "#10b981";
-    ctx.font = "bold 14px sans-serif";
+    ctx.fillStyle = "#10B981";
+    ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("🏀 BASKET CLUB DE SAINT-NICOLAS", 300, 85);
+    ctx.fillText("🏀 BASKET CLUB DE SAINT-NICOLAS · PRONOSTIC OFFICIEL", 400, 110);
 
     // User Info (Avatar & Pseudo)
-    ctx.fillStyle = "#f8fafc";
-    ctx.font = "900 24px sans-serif";
-    ctx.fillText(`${avatarEmoji} PRONOSTIC DE ${userPseudo.toUpperCase()}`, 300, 125);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 32px sans-serif";
+    ctx.fillText(`${avatarEmoji} PRONOSTIC DE ${userPseudo.toUpperCase()}`, 400, 165);
 
     // Match Details
     const matchLabel = isHome
-      ? `BCSN vs ${opponentName}`
-      : `${opponentName} vs BCSN`;
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "600 15px sans-serif";
-    ctx.fillText(matchLabel, 300, 155);
+      ? `BCSN vs ${opponentName} (Domicile)`
+      : `${opponentName} vs BCSN (Extérieur)`;
+    ctx.fillStyle = "#94A3B8";
+    ctx.font = "600 18px sans-serif";
+    ctx.fillText(matchLabel, 400, 205);
 
     // Score Display Box
-    ctx.fillStyle = "rgba(2, 6, 23, 0.7)";
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.lineWidth = 1.5;
+    ctx.fillStyle = "rgba(7, 10, 17, 0.9)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(80, 185, 440, 220, 24);
+    ctx.roundRect(90, 240, 620, 280, 28);
     ctx.fill();
     ctx.stroke();
 
     // Team 1 Name & Score
-    ctx.fillStyle = "#34d399";
-    ctx.font = "900 18px sans-serif";
-    ctx.fillText("BCSN", 190, 230);
+    ctx.fillStyle = "#34D399";
+    ctx.font = "900 22px sans-serif";
+    ctx.fillText("BCSN", 240, 295);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 72px sans-serif";
-    ctx.fillText(String(predictedBcsn), 190, 320);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 96px sans-serif";
+    ctx.fillText(String(predictedBcsn), 240, 405);
 
     // VS Separator
-    ctx.fillStyle = "#64748b";
-    ctx.font = "900 36px sans-serif";
-    ctx.fillText("–", 300, 310);
+    ctx.fillStyle = "#64748B";
+    ctx.font = "900 48px sans-serif";
+    ctx.fillText("–", 400, 395);
 
     // Team 2 Name & Score
     const oppShort = opponentName.split(" ")[0].toUpperCase();
-    ctx.fillStyle = "#f43f5e";
-    ctx.font = "900 18px sans-serif";
-    ctx.fillText(oppShort, 410, 230);
+    ctx.fillStyle = "#F43F5E";
+    ctx.font = "900 22px sans-serif";
+    ctx.fillText(oppShort, 560, 295);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 72px sans-serif";
-    ctx.fillText(String(predictedOpponent), 410, 320);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 96px sans-serif";
+    ctx.fillText(String(predictedOpponent), 560, 405);
 
-    // Prediction Status Badge
+    // Prediction Status Pill
     const bcsnWins = predictedBcsn > predictedOpponent;
-    ctx.fillStyle = bcsnWins ? "rgba(16, 185, 129, 0.2)" : "rgba(244, 63, 94, 0.2)";
+    const diff = Math.abs(predictedBcsn - predictedOpponent);
+    ctx.fillStyle = bcsnWins ? "rgba(16, 185, 129, 0.25)" : "rgba(244, 63, 94, 0.25)";
     ctx.beginPath();
-    ctx.roundRect(140, 350, 320, 36, 12);
+    ctx.roundRect(160, 445, 480, 48, 16);
     ctx.fill();
 
-    ctx.fillStyle = bcsnWins ? "#34d399" : "#fb7185";
-    ctx.font = "bold 14px sans-serif";
+    ctx.fillStyle = bcsnWins ? "#34D399" : "#FB7185";
+    ctx.font = "bold 18px sans-serif";
     const statusText = bcsnWins
-      ? `🔥 Victoire BCSN de +${predictedBcsn - predictedOpponent} pts`
-      : `⚠️ Victoire ${oppShort} de +${predictedOpponent - predictedBcsn} pts`;
-    ctx.fillText(statusText, 300, 373);
+      ? `🔥 Prédiction : Victoire BCSN de +${diff} pts`
+      : `⚠️ Prédiction : Victoire ${oppShort} de +${diff} pts`;
+    ctx.fillText(statusText, 400, 476);
 
-    // Footer Watermark
-    ctx.fillStyle = "#64748b";
-    ctx.font = "600 14px sans-serif";
-    ctx.fillText("Et toi, quel est ton pronostic ? 🏆", 300, 480);
+    // Footer Call To Action
+    ctx.fillStyle = "#F59E0B";
+    ctx.font = "bold 18px sans-serif";
+    ctx.fillText("🏆 Et toi, quel est ton pronostic pour ce match ?", 400, 600);
 
-    ctx.fillStyle = "#10b981";
-    ctx.font = "bold 13px sans-serif";
-    ctx.fillText("bcsn-pronos.netlify.app", 300, 510);
+    ctx.fillStyle = "#94A3B8";
+    ctx.font = "500 15px sans-serif";
+    ctx.fillText("Rejoins la communauté BCSN et gagne des points !", 400, 635);
 
-    // Export image URL
+    // App URL stamp
+    ctx.fillStyle = "#10B981";
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText("bcsn-pronos.netlify.app", 400, 680);
+
     setImageUrl(canvas.toDataURL("image/png"));
   }, [isOpen, userPseudo, avatarEmoji, opponentName, predictedBcsn, predictedOpponent, isHome]);
 
@@ -152,7 +159,6 @@ export default function PredictionShareModal({
     if (!imageUrl) return;
 
     try {
-      // Convert DataURL to Blob/File for Web Share API
       const res = await fetch(imageUrl);
       const blob = await res.blob();
       const file = new File([blob], "prono-bcsn.png", { type: "image/png" });
@@ -164,16 +170,15 @@ export default function PredictionShareModal({
           text: `Mon prono pour ${isHome ? `BCSN vs ${opponentName}` : `${opponentName} vs BCSN`} : ${predictedBcsn} - ${predictedOpponent} ! 🏀`,
         });
       } else {
-        // Fallback: Copy share link/text
         handleCopyText();
       }
-    } catch (err) {
+    } catch {
       handleCopyText();
     }
   };
 
   const handleCopyText = () => {
-    const text = `🏀 Mon pronostic BCSN vs ${opponentName} : ${predictedBcsn} - ${predictedOpponent} ! Rejoins-nous sur l'application BCSN Pronos ! 🏆`;
+    const text = `🏀 Mon pronostic BCSN vs ${opponentName} : ${predictedBcsn} - ${predictedOpponent} ! Rejoins-nous sur l'application BCSN Pronos ! 🏆 https://bcsn-pronos.netlify.app`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -188,44 +193,44 @@ export default function PredictionShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md anim-fade">
-      <div className="relative w-full max-w-sm bg-bg-card rounded-3xl p-5 shadow-2xl border border-border-1 anim-slide">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl anim-fade">
+      <div className="relative w-full max-w-sm card-elevated p-5 shadow-2xl border border-border-2 anim-scale">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-text-4 hover:text-text-1 w-8 h-8 rounded-full bg-bg-surface flex items-center justify-center z-10"
+          className="absolute top-4 right-4 text-text-4 hover:text-text-1 w-9 h-9 rounded-full bg-bg-surface flex items-center justify-center z-10 transition-colors"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
 
         {/* Modal Title */}
         <div className="text-center mb-4">
-          <span className="badge badge-open text-[10px] mb-1.5 inline-flex items-center gap-1">
-            <Sparkles size={10} /> Carte Réseaux Sociaux
+          <span className="badge badge-open text-[10px] mb-2 inline-flex items-center gap-1">
+            <Sparkles size={11} className="text-primary-text" /> Carte Réseaux Sociaux HD
           </span>
-          <h3 className="text-base font-black text-text-1">
+          <h3 className="text-lg font-black text-text-1">
             Partager mon pronostic
           </h3>
           <p className="text-xs text-text-3 mt-0.5">
-            Partage ton visuel sur WhatsApp ou Instagram !
+            Publie ton visuel officiel sur WhatsApp ou Story Instagram !
           </p>
         </div>
 
         {/* Rendered Preview Card Image */}
         {imageUrl ? (
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-4 border border-emerald-500/30 group">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-4 border border-primary/30 group">
             <img src={imageUrl} alt="Mon Prono BCSN" className="w-full h-auto object-contain" />
           </div>
         ) : (
           <div className="w-full h-64 rounded-2xl bg-bg-surface flex items-center justify-center text-xs text-text-3 mb-4">
-            Génération de la carte...
+            Génération de la carte HD...
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <button
             onClick={handleNativeShare}
-            className="btn-primary w-full py-3 text-xs font-black flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-indigo-600 shadow-lg"
+            className="btn-primary w-full py-3.5 text-xs font-black flex items-center justify-center gap-2 shadow-xl"
           >
             <Share2 size={16} />
             Partager sur WhatsApp / Instagram
@@ -234,18 +239,18 @@ export default function PredictionShareModal({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleDownloadImage}
-              className="btn-secondary py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+              className="btn-secondary py-3 text-xs font-bold flex items-center justify-center gap-1.5"
             >
-              <Download size={14} />
-              Télécharger PNG
+              <Download size={15} />
+              Enregistrer PNG
             </button>
 
             <button
               onClick={handleCopyText}
-              className="btn-secondary py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+              className="btn-secondary py-3 text-xs font-bold flex items-center justify-center gap-1.5"
             >
-              {copied ? <Check size={14} className="text-primary-text" /> : <Copy size={14} />}
-              {copied ? "Copié !" : "Copier texte"}
+              {copied ? <Check size={15} className="text-primary-text" /> : <Copy size={15} />}
+              {copied ? "Copié !" : "Copier le texte"}
             </button>
           </div>
         </div>

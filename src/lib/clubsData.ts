@@ -284,8 +284,12 @@ export function getClubLogoPath(nameStr: string): string | null {
   if (name.includes("gouvieux")) return "/logos/gouvieux.png";
   if (name.includes("hornaing")) return "/logos/hornaing.png";
   if (name.includes("quentin") || name.includes("stquentin")) return "/logos/st-quentin.png";
+  if (name.includes("amiens")) return "/logos/amiens.jpg";
+  if (name.includes("lesquin")) return "/logos/lesquin.jpg";
+  if (name.includes("liller") || name.includes("lilier")) return "/logos/lillers.jpg";
   return null;
 }
+
 
 export function getClubBySlug(slug: string): ClubProfile {
   const normalized = slug.toLowerCase().replace(/[^a-z0-9]/g, "");

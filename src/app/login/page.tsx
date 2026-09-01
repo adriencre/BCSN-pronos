@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { User, Lock, LogIn, UserPlus, AlertCircle } from "lucide-react";
+import { User, Lock, LogIn, UserPlus, AlertCircle, Sparkles, Shield, Trophy } from "lucide-react";
 import { loginUser, registerUser } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
 
@@ -43,29 +43,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base bg-texture flex flex-col items-center justify-center px-6">
-      {/* Brand */}
-      <div className="text-center mb-10 anim-fade">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-primary-soft flex items-center justify-center mb-4">
-          <span className="text-3xl">🏀</span>
+    <div className="min-h-screen bg-bg-base bg-texture flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
+      {/* Background ambient lighting effects */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-bcsn-blue/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Brand Header */}
+      <div className="text-center mb-8 anim-fade relative z-10">
+        <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary via-emerald-600 to-indigo-700 p-1 shadow-[0_0_30px_rgba(16,185,129,0.35)] flex items-center justify-center mb-4 anim-float">
+          <div className="w-full h-full rounded-[22px] bg-slate-950 flex items-center justify-center shadow-inner">
+            <span className="text-4xl">🏀</span>
+          </div>
         </div>
-        <h1 className="text-2xl font-black text-text-1 tracking-tight">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-soft border border-primary/30 text-primary-text text-[11px] font-bold uppercase tracking-wider mb-2">
+          <Sparkles size={12} /> Application Officielle
+        </div>
+        <h1 className="text-3xl font-black text-text-1 tracking-tight">
           BCSN Pronos
         </h1>
-        <p className="text-xs text-text-3 mt-1.5">
-          Basket Club de Saint Nicolas
+        <p className="text-xs text-text-3 font-medium mt-1">
+          Basket Club de Saint-Nicolas-lez-Arras
         </p>
       </div>
 
-      {/* Form */}
-      <div className="w-full max-w-sm card-elevated p-6 anim-slide delay-1">
+      {/* Main Authentication Card */}
+      <div className="w-full max-w-sm card-elevated p-6 anim-slide delay-1 relative z-10 border border-border-2">
         {/* Mode toggle */}
-        <div className="flex gap-1 mb-6 p-1 bg-bg-surface rounded-xl">
+        <div className="flex gap-1 mb-6 p-1.5 bg-bg-surface rounded-2xl border border-border-1">
           <button
+            type="button"
             onClick={() => { setMode("login"); setError(""); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-200 ${
               mode === "login"
-                ? "bg-bg-card text-text-1 shadow-sm"
+                ? "bg-bg-card text-text-1 shadow-md border border-border-2"
                 : "text-text-3 hover:text-text-2"
             }`}
             id="mode-login"
@@ -73,10 +83,11 @@ export default function LoginPage() {
             Connexion
           </button>
           <button
+            type="button"
             onClick={() => { setMode("register"); setError(""); }}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-200 ${
               mode === "register"
-                ? "bg-bg-card text-text-1 shadow-sm"
+                ? "bg-bg-card text-text-1 shadow-md border border-border-2"
                 : "text-text-3 hover:text-text-2"
             }`}
             id="mode-register"
@@ -88,20 +99,20 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Pseudo */}
           <div>
-            <label className="text-[10px] font-semibold text-text-3 uppercase tracking-widest mb-1.5 block">
-              Pseudo
+            <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1.5 block">
+              Pseudo joueur ou supporter
             </label>
             <div className="relative">
               <User
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-4"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-3"
               />
               <input
                 type="text"
                 value={pseudo}
                 onChange={(e) => setPseudo(e.target.value)}
-                placeholder="Ton pseudo"
-                className="input pl-10"
+                placeholder="Ex: AdrienBCSN"
+                className="input pl-11"
                 required
                 minLength={2}
                 maxLength={16}
@@ -112,13 +123,13 @@ export default function LoginPage() {
 
           {/* PIN */}
           <div>
-            <label className="text-[10px] font-semibold text-text-3 uppercase tracking-widest mb-1.5 block">
-              Code PIN
+            <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider mb-1.5 block">
+              Code PIN secret (4 chiffres)
             </label>
             <div className="relative">
               <Lock
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-4"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-text-3"
               />
               <input
                 type="password"
@@ -126,75 +137,89 @@ export default function LoginPage() {
                 pattern="[0-9]{4}"
                 value={pin}
                 onChange={(e) => handlePinInput(e.target.value)}
-                placeholder="4 chiffres"
-                className="input pl-10 tracking-[0.3em]"
+                placeholder="••••"
+                className="input pl-11 text-center font-mono tracking-[0.4em] text-lg font-bold"
                 required
                 maxLength={4}
                 id="input-pin"
               />
             </div>
-            {/* PIN dots */}
-            <div className="flex justify-center gap-2.5 mt-3">
+
+            {/* Visual PIN Dots Indicator */}
+            <div className="flex justify-center items-center gap-3 mt-3">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    i < pin.length ? "bg-primary scale-125" : "bg-text-4/30"
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    i < pin.length
+                      ? "bg-primary scale-125 shadow-[0_0_10px_#10B981]"
+                      : "bg-border-2"
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Registration-only fields */}
+          {/* Registration Extra Fields */}
           {mode === "register" && (
             <>
-              {/* Role */}
-              <div className="anim-fade">
-                <label className="text-[10px] font-semibold text-text-3 uppercase tracking-widest mb-1.5 block">
-                  Tu es...
+              {/* Role Picker */}
+              <div className="anim-fade space-y-1.5">
+                <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block">
+                  Ton statut au club
                 </label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setRole("SUPPORTER")}
-                    className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    className={`p-3 rounded-2xl text-left transition-all border ${
                       role === "SUPPORTER"
-                        ? "bg-gold-soft text-gold border border-gold/20"
-                        : "bg-bg-surface text-text-3 border border-transparent"
+                        ? "bg-gold-soft border-gold/40 text-gold shadow-md shadow-amber-500/10"
+                        : "bg-bg-surface border-border-1 text-text-3 hover:border-border-2"
                     }`}
                   >
-                    Supporter
+                    <div className="flex items-center justify-between mb-1">
+                      <Trophy size={16} />
+                      <span className="text-[9px] font-black uppercase">Supporter</span>
+                    </div>
+                    <p className="text-xs font-bold text-text-1">Supporter</p>
+                    <p className="text-[10px] text-text-3 mt-0.5">Fan & Public BCSN</p>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setRole("JOUEUR")}
-                    className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    className={`p-3 rounded-2xl text-left transition-all border ${
                       role === "JOUEUR"
-                        ? "bg-primary-soft text-primary-text border border-primary/20"
-                        : "bg-bg-surface text-text-3 border border-transparent"
+                        ? "bg-primary-soft border-primary/40 text-primary-text shadow-md shadow-emerald-500/10"
+                        : "bg-bg-surface border-border-1 text-text-3 hover:border-border-2"
                     }`}
                   >
-                    Joueur BCSN
+                    <div className="flex items-center justify-between mb-1">
+                      <Shield size={16} />
+                      <span className="text-[9px] font-black uppercase">Équipe</span>
+                    </div>
+                    <p className="text-xs font-bold text-text-1">Joueur BCSN</p>
+                    <p className="text-[10px] text-text-3 mt-0.5">Licencié du club</p>
                   </button>
                 </div>
               </div>
 
-              {/* Avatar */}
-              <div className="anim-fade">
-                <label className="text-[10px] font-semibold text-text-3 uppercase tracking-widest mb-1.5 block">
-                  Avatar
+              {/* Avatar Selector */}
+              <div className="anim-fade space-y-1.5">
+                <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block">
+                  Choisis ton avatar
                 </label>
-                <div className="grid grid-cols-6 gap-1.5">
+                <div className="grid grid-cols-6 gap-1.5 bg-bg-surface p-2 rounded-2xl border border-border-1">
                   {avatarOptions.map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
                       onClick={() => setAvatar(emoji)}
-                      className={`w-full aspect-square rounded-xl flex items-center justify-center text-lg transition-all ${
+                      className={`aspect-square rounded-xl flex items-center justify-center text-lg transition-all ${
                         avatar === emoji
-                          ? "bg-primary-soft ring-2 ring-primary/30"
-                          : "bg-bg-surface hover:bg-bg-card"
+                          ? "bg-primary-soft ring-2 ring-primary scale-110 shadow-sm"
+                          : "hover:bg-bg-card opacity-80 hover:opacity-100"
                       }`}
                     >
                       {emoji}
@@ -205,42 +230,47 @@ export default function LoginPage() {
             </>
           )}
 
-          {/* Error */}
+          {/* Error Message */}
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-soft text-accent text-sm font-medium anim-fade">
-              <AlertCircle size={14} />
-              {error}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-soft text-accent text-xs font-semibold border border-accent/20 anim-fade">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Submit */}
+          {/* Submit CTA */}
           <button
             type="submit"
             disabled={isPending || pin.length !== 4}
-            className={`btn-primary flex items-center justify-center gap-2 mt-1 ${
-              pin.length !== 4 ? "!opacity-30" : ""
+            className={`btn-primary flex items-center justify-center gap-2 mt-2 ${
+              pin.length !== 4 ? "!opacity-40" : ""
             }`}
             id="submit-auth"
           >
             {mode === "login" ? (
               <>
-                <LogIn size={16} />
-                {isPending ? "Connexion..." : "Se connecter"}
+                <LogIn size={18} />
+                <span>{isPending ? "Connexion en cours..." : "Accéder à l'application"}</span>
               </>
             ) : (
               <>
-                <UserPlus size={16} />
-                {isPending ? "Création..." : "Créer mon compte"}
+                <UserPlus size={18} />
+                <span>{isPending ? "Création du profil..." : "Créer mon compte joueur"}</span>
               </>
             )}
           </button>
         </form>
       </div>
 
-      {/* Footer */}
-      <p className="text-[10px] text-text-4 mt-8 anim-fade delay-3">
-        Basket Club de Saint Nicolas © {new Date().getFullYear()}
-      </p>
+      {/* Footer Info */}
+      <div className="text-center mt-6 anim-fade delay-3 relative z-10">
+        <p className="text-[11px] text-text-3 font-semibold">
+          Saison Régionale 2026–2027 · FFBB
+        </p>
+        <p className="text-[10px] text-text-4 mt-0.5">
+          Basket Club de Saint-Nicolas © {new Date().getFullYear()}
+        </p>
+      </div>
     </div>
   );
 }
