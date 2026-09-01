@@ -2,7 +2,9 @@
 
 import { supabase } from "./supabase";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { AVATAR_OPTIONS } from "./constants";
+
 
 // ─── Types & Helper Transformers ──────────────────────────────────────────────
 export interface UserRecord {
@@ -139,7 +141,7 @@ export async function getVotingWindow(matchDateTime: Date): Promise<{ opensAt: D
   return { opensAt, closesAt };
 }
 
-export async function getActiveMatch() {
+export const getActiveMatch = cache(async function getActiveMatch() {
   const now = new Date();
 
   const { data, error } = await supabase
@@ -161,9 +163,9 @@ export async function getActiveMatch() {
     closesAt,
     isVotingOpen,
   };
-}
+});
 
-export async function getUpcomingMatches() {
+export const getUpcomingMatches = cache(async function getUpcomingMatches() {
   const { data, error } = await supabase
     .from("matches")
     .select("*")
@@ -172,7 +174,8 @@ export async function getUpcomingMatches() {
 
   if (error || !data) return [];
   return data.map(transformMatch);
-}
+});
+
 
 // ─── Auth Actions ─────────────────────────────────────────────────────────────
 export async function registerUser(
@@ -280,7 +283,7 @@ export async function logoutUser() {
   return { success: true };
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async function getCurrentUser() {
   const cookieStore = await cookies();
   const userIdCookie = cookieStore.get("userId");
   if (!userIdCookie) return null;
@@ -297,7 +300,8 @@ export async function getCurrentUser() {
   if (error || !users || users.length === 0) return null;
 
   return transformUser(users[0]);
-}
+});
+
 
 export async function updateProfile(avatarEmoji: string) {
   const user = await getCurrentUser();
@@ -552,7 +556,7 @@ export async function getUserAllPredictions(userId: number) {
 }
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────
-export async function getLeaderboard() {
+export const getLeaderboard = cache(async function getLeaderboard() {
   const { data, error } = await supabase
     .from("users")
     .select("id, pseudo, total_score, role, avatar_emoji, predictions(id, points_earned, match:matches(status, date_time))")
@@ -592,10 +596,10 @@ export async function getLeaderboard() {
       _count: { predictions: rawPreds.length },
     };
   });
-}
+});
 
 // ─── Past Matches ─────────────────────────────────────────────────────────────
-export async function getPastMatches() {
+export const getPastMatches = cache(async function getPastMatches() {
   const { data, error } = await supabase
     .from("matches")
     .select("*, predictions(*, user:users(*))")
@@ -604,7 +608,8 @@ export async function getPastMatches() {
 
   if (error || !data) return [];
   return data.map(transformMatch);
-}
+});
+
 
 // ─── Seed Official 2026-2027 Schedule ───────────────────────────────────────
 export async function seedSampleMatches() {
