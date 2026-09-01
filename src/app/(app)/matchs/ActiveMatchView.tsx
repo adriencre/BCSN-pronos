@@ -27,7 +27,9 @@ import {
 import ScoreInput from "@/components/ScoreInput";
 import ClubProfileModal from "@/components/ClubProfileModal";
 import PredictionShareModal from "@/components/PredictionShareModal";
+import UserAvatar from "@/components/UserAvatar";
 import { submitPrediction } from "@/lib/actions";
+
 import { getClubLogoPath } from "@/lib/clubsData";
 
 interface ActiveMatchViewProps {
@@ -346,12 +348,13 @@ export default function ActiveMatchView({
       {/* Top Player Snippet Bar */}
       <div className="flex items-center justify-between mb-4 bg-bg-card/70 backdrop-blur-md p-3 rounded-2xl border border-border-1 anim-fade">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-bcsn-blue p-0.5 shadow-md flex items-center justify-center text-lg shrink-0">
-            <div className="w-full h-full rounded-[10px] bg-bg-surface flex items-center justify-center">
-              {currentUserAvatar}
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-bcsn-blue p-0.5 shadow-md flex items-center justify-center text-lg shrink-0 overflow-hidden">
+            <div className="w-full h-full rounded-[10px] bg-bg-surface flex items-center justify-center overflow-hidden">
+              <UserAvatar avatar={currentUserAvatar} className="w-full h-full text-base" />
             </div>
           </div>
           <div>
+
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-extrabold text-text-1 leading-none">
                 {currentUserPseudo}

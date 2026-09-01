@@ -193,7 +193,13 @@ export async function registerUser(
   if (!["JOUEUR", "SUPPORTER"].includes(role)) {
     return { error: "Rôle invalide" };
   }
-  if (!AVATAR_OPTIONS.includes(avatarEmoji)) {
+  const isCustomPhoto =
+    typeof avatarEmoji === "string" &&
+    (avatarEmoji.startsWith("data:image/") ||
+      avatarEmoji.startsWith("http://") ||
+      avatarEmoji.startsWith("https://"));
+
+  if (!AVATAR_OPTIONS.includes(avatarEmoji) && !isCustomPhoto) {
     avatarEmoji = "🏀";
   }
 
@@ -285,7 +291,13 @@ export async function updateProfile(avatarEmoji: string) {
   const user = await getCurrentUser();
   if (!user) return { error: "Non connecté" };
 
-  if (!AVATAR_OPTIONS.includes(avatarEmoji)) {
+  const isCustomPhoto =
+    typeof avatarEmoji === "string" &&
+    (avatarEmoji.startsWith("data:image/") ||
+      avatarEmoji.startsWith("http://") ||
+      avatarEmoji.startsWith("https://"));
+
+  if (!AVATAR_OPTIONS.includes(avatarEmoji) && !isCustomPhoto) {
     return { error: "Avatar invalide" };
   }
 
@@ -297,6 +309,7 @@ export async function updateProfile(avatarEmoji: string) {
   if (error) return { error: error.message };
   return { success: true };
 }
+
 
 export async function updateUserTheme(theme: "dark" | "light") {
   const user = await getCurrentUser();

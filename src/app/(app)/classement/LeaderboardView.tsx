@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Trophy, Star, Target, Flame, Crown, Medal, Award, Info, ChevronDown, CheckCircle2 } from "lucide-react";
+import UserAvatar from "@/components/UserAvatar";
 
 interface Entry {
   id: number;
@@ -241,10 +242,10 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                       avatar ${isFirst ? "avatar-xl" : "avatar-lg"}
                       ${rc.bg} ring-2 ${rc.ring} ${rc.border}
                       ${isMe ? "ring-primary ring-offset-2 ring-offset-bg-base" : ""}
-                      mb-2 anim-scale delay-2 shadow-xl relative
+                      mb-2 anim-scale delay-2 shadow-xl relative overflow-hidden p-0
                     `}
                   >
-                    {entry.avatarEmoji}
+                    <UserAvatar avatar={entry.avatarEmoji} className="w-full h-full text-2xl" />
                   </div>
 
                   {/* Pseudo */}
@@ -314,9 +315,10 @@ export default function LeaderboardView({ leaderboard, currentUserId }: Props) {
                 </span>
 
                 {/* Avatar */}
-                <div className="avatar avatar-sm bg-bg-surface border border-border-1 shrink-0">
-                  {entry.avatarEmoji}
+                <div className="avatar avatar-sm bg-bg-surface border border-border-1 shrink-0 overflow-hidden p-0">
+                  <UserAvatar avatar={entry.avatarEmoji} className="w-full h-full text-sm" />
                 </div>
+
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

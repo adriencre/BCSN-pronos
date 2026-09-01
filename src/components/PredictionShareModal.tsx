@@ -76,9 +76,19 @@ export default function PredictionShareModal({
     ctx.fillText("🏀 BASKET CLUB DE SAINT-NICOLAS · PRONOSTIC OFFICIEL", 400, 110);
 
     // User Info (Avatar & Pseudo)
+    const isImage =
+      typeof avatarEmoji === "string" &&
+      (avatarEmoji.startsWith("data:image/") ||
+        avatarEmoji.startsWith("http://") ||
+        avatarEmoji.startsWith("https://"));
+
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "900 32px sans-serif";
-    ctx.fillText(`${avatarEmoji} PRONOSTIC DE ${userPseudo.toUpperCase()}`, 400, 165);
+    const headerTitle = isImage
+      ? `PRONOSTIC DE ${userPseudo.toUpperCase()}`
+      : `${avatarEmoji} PRONOSTIC DE ${userPseudo.toUpperCase()}`;
+    ctx.fillText(headerTitle, 400, 165);
+
 
     // Match Details
     const matchLabel = isHome

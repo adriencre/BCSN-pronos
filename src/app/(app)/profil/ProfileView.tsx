@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import {
   LogOut,
   Trophy,
@@ -24,9 +24,13 @@ import {
   Crown,
   ChevronRight,
   Flame,
+  Camera,
+  Upload,
+  Trash2,
 } from "lucide-react";
 import { logoutUser, updateProfile, updateUserTheme } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
+import UserAvatar from "@/components/UserAvatar";
 
 interface PredictionHistory {
   matchId: number;
@@ -65,6 +69,7 @@ export default function ProfileView({
   predictions,
 }: Props) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isPending, startTransition] = useTransition();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState(user.avatarEmoji);
@@ -108,13 +113,49 @@ export default function ProfileView({
     });
   };
 
-  const handleAvatarChange = (emoji: string) => {
-    setCurrentAvatar(emoji);
+  const handleAvatarChange = (avatarVal: string) => {
+    setCurrentAvatar(avatarVal);
     setShowAvatarPicker(false);
     startTransition(async () => {
-      await updateProfile(emoji);
+      await updateProfile(avatarVal);
       router.refresh();
     });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Crop square center
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL("image/webp", 0.85);
+
+        setCurrentAvatar(dataUrl);
+        setShowAvatarPicker(false);
+
+        startTransition(async () => {
+          await updateProfile(dataUrl);
+          router.refresh();
+        });
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const avg =
@@ -154,6 +195,10 @@ export default function ProfileView({
   };
 
   const isAdmin = user.role === "ADMIN" || user.role === "COACH";
+  const isCustomPhoto =
+    currentAvatar.startsWith("data:image/") ||
+    currentAvatar.startsWith("http://") ||
+    currentAvatar.startsWith("https://");
 
   return (
     <div className="px-4 pt-4 pb-16">
@@ -184,10 +229,10 @@ export default function ProfileView({
           <div className="relative group">
             <button
               onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              className="avatar avatar-xl bg-bg-surface ring-2 ring-primary/40 group-hover:ring-primary transition-all shadow-xl"
-              title="Changer d'avatar"
+              className="avatar avatar-xl bg-bg-surface ring-2 ring-primary/40 group-hover:ring-primary transition-all shadow-xl overflow-hidden p-0"
+              title="Changer de photo ou d'avatar"
             >
-              {currentAvatar}
+              <UserAvatar avatar={currentAvatar} className="w-full h-full text-3xl" />
             </button>
             <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center shadow-md border-2 border-bg-base">
               ✎
@@ -223,13 +268,13 @@ export default function ProfileView({
           </div>
         </div>
 
-        {/* Avatar Drawer Picker */}
+        {/* Avatar & Photo Drawer Picker */}
         {showAvatarPicker && (
-          <div className="bg-bg-surface rounded-2xl p-3.5 mb-4 anim-fade border border-border-1 relative z-10">
-            <div className="flex items-center justify-between mb-2.5">
-              <p className="text-xs text-text-2 font-bold flex items-center gap-1">
-                <Sparkles size={12} className="text-primary-text" />
-                Choisir un nouvel avatar
+          <div className="bg-bg-surface rounded-2xl p-4 mb-4 anim-fade border border-border-1 relative z-10 space-y-3.5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-text-1 font-black flex items-center gap-1.5">
+                <Sparkles size={14} className="text-primary-text" />
+                Photo de profil & Avatar
               </p>
               <button
                 onClick={() => setShowAvatarPicker(false)}
@@ -238,23 +283,63 @@ export default function ProfileView({
                 Fermer
               </button>
             </div>
-            <div className="grid grid-cols-6 gap-2">
-              {avatarOptions.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleAvatarChange(emoji)}
-                  className={`
-                    aspect-square rounded-xl flex items-center justify-center text-lg transition-all
-                    ${
-                      currentAvatar === emoji
-                        ? "bg-primary-soft ring-2 ring-primary scale-110 shadow-sm"
-                        : "bg-bg-card hover:bg-bg-card-hover"
-                    }
-                  `}
-                >
-                  {emoji}
-                </button>
-              ))}
+
+            {/* Upload Custom Photo Button */}
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload}
+                id="photo-upload-input"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-primary w-full py-3 text-xs font-black flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Camera size={16} />
+                <span>Importer ma photo (Galerie / Caméra)</span>
+              </button>
+            </div>
+
+            {/* If has custom photo, show option to reset */}
+            {isCustomPhoto && (
+              <button
+                type="button"
+                onClick={() => handleAvatarChange("🏀")}
+                className="btn-secondary w-full py-2 text-[11px] font-bold text-accent flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={13} />
+                <span>Supprimer ma photo (remettre un emoji)</span>
+              </button>
+            )}
+
+            {/* Preset Emojis Divider */}
+            <div className="pt-2 border-t border-border-1">
+              <span className="text-[10px] font-bold text-text-3 uppercase tracking-wider block mb-2">
+                Ou choisis un avatar emoji officiel :
+              </span>
+              <div className="grid grid-cols-6 gap-2">
+                {avatarOptions.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleAvatarChange(emoji)}
+                    className={`
+                      aspect-square rounded-xl flex items-center justify-center text-lg transition-all
+                      ${
+                        currentAvatar === emoji
+                          ? "bg-primary-soft ring-2 ring-primary scale-110 shadow-sm"
+                          : "bg-bg-card hover:bg-bg-card-hover"
+                      }
+                    `}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, Lock, LogIn, UserPlus, AlertCircle, Sparkles, Shield, Trophy } from "lucide-react";
+import { User, Lock, LogIn, UserPlus, AlertCircle, Sparkles, Shield, Trophy, Camera, Trash2 } from "lucide-react";
 import { loginUser, registerUser } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function LoginPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [pseudo, setPseudo] = useState("");
@@ -41,6 +43,40 @@ export default function LoginPage() {
     const cleaned = value.replace(/\D/g, "").slice(0, 4);
     setPin(cleaned);
   };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const minDim = Math.min(img.width, img.height);
+        const startX = (img.width - minDim) / 2;
+        const startY = (img.height - minDim) / 2;
+
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL("image/webp", 0.85);
+
+        setAvatar(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const isCustomPhoto =
+    avatar.startsWith("data:image/") ||
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://");
 
   return (
     <div className="min-h-screen bg-bg-base bg-texture flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
@@ -205,11 +241,48 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Avatar Selector */}
-              <div className="anim-fade space-y-1.5">
-                <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider block">
-                  Choisis ton avatar
-                </label>
+              {/* Avatar / Photo Selector */}
+              <div className="anim-fade space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-text-3 uppercase tracking-wider">
+                    Photo de profil ou avatar
+                  </label>
+                  {isCustomPhoto && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatar("🏀")}
+                      className="text-[10px] font-bold text-accent flex items-center gap-1"
+                    >
+                      <Trash2 size={11} /> Remettre un emoji
+                    </button>
+                  )}
+                </div>
+
+                {/* Custom Photo Button & Preview */}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    id="register-photo-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-secondary flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <Camera size={15} />
+                    <span>{isCustomPhoto ? "Changer la photo" : "Importer ma photo"}</span>
+                  </button>
+                  {isCustomPhoto && (
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-primary shrink-0">
+                      <UserAvatar avatar={avatar} className="w-full h-full" />
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-6 gap-1.5 bg-bg-surface p-2 rounded-2xl border border-border-1">
                   {avatarOptions.map((emoji) => (
                     <button
