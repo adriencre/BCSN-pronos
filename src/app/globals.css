@@ -50,49 +50,8 @@
 }
 
 
-/* ── Light Mode Override Variables ── */
-html.light {
-  --color-bg-base: #F8FAFC;
-  --color-bg-elevated: #FFFFFF;
-  --color-bg-card: #FFFFFF;
-  --color-bg-card-hover: #F1F5F9;
-  --color-bg-input: #F1F5F9;
-  --color-bg-surface: #F1F5F9;
-  
-  --color-primary: #059669;
-  --color-primary-dark: #047857;
-  --color-primary-soft: rgba(5, 150, 105, 0.12);
-  --color-primary-medium: rgba(5, 150, 105, 0.22);
-  --color-primary-text: #047857;
-  --color-primary-glow: rgba(5, 150, 105, 0.25);
-  
-  --color-bcsn-blue: #1D4ED8;
-  --color-bcsn-blue-soft: rgba(29, 78, 216, 0.12);
-  --color-bcsn-blue-text: #1D4ED8;
-  
-  --color-accent: #E11D48;
-  --color-accent-soft: rgba(225, 29, 72, 0.12);
-  --color-accent-hover: #BE123C;
-  
-  --color-text-1: #0F172A;
-  --color-text-2: #334155;
-  --color-text-3: #64748B;
-  --color-text-4: #94A3B8;
-  
-  --color-border-1: rgba(0, 0, 0, 0.07);
-  --color-border-2: rgba(0, 0, 0, 0.12);
-  --color-border-focus: rgba(5, 150, 105, 0.4);
-  
-  --color-gold: #D97706;
-  --color-gold-light: #F59E0B;
-  --color-gold-soft: rgba(217, 119, 6, 0.12);
-  --color-silver: #64748B;
-  --color-silver-soft: rgba(100, 116, 139, 0.12);
-  --color-bronze: #B45309;
-  --color-bronze-soft: rgba(180, 83, 9, 0.12);
 
-  color-scheme: light;
-}
+
 
 /* ── Base Reset & Smoothness ── */
 html {

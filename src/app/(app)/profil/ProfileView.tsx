@@ -17,9 +17,6 @@ import {
   Zap,
   Award,
   Lock,
-  Sun,
-  Moon,
-  Paintbrush,
   Sparkles,
   Crown,
   ChevronRight,
@@ -28,9 +25,10 @@ import {
   Upload,
   Trash2,
 } from "lucide-react";
-import { logoutUser, updateProfile, updateUserTheme } from "@/lib/actions";
+import { logoutUser, updateProfile } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
 import UserAvatar from "@/components/UserAvatar";
+
 
 interface PredictionHistory {
   matchId: number;
@@ -73,43 +71,6 @@ export default function ProfileView({
   const [isPending, startTransition] = useTransition();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState(user.avatarEmoji);
-  const [theme, setTheme] = useState<"dark" | "light">(
-    (user.theme as "dark" | "light") || "dark"
-  );
-
-  // Load and apply theme
-  useEffect(() => {
-    const savedTheme =
-      (user.theme as "dark" | "light") ||
-      (localStorage.getItem("bcsn_theme") as "dark" | "light") ||
-      "dark";
-
-    setTheme(savedTheme);
-    if (savedTheme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-  }, [user.theme]);
-
-  const toggleTheme = (newTheme: "dark" | "light") => {
-    setTheme(newTheme);
-    try {
-      localStorage.setItem("bcsn_theme", newTheme);
-      document.cookie = `bcsn_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
-    } catch (e) {}
-
-    if (newTheme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-
-    startTransition(async () => {
-      await updateUserTheme(newTheme);
-    });
-  };
-
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -117,6 +78,7 @@ export default function ProfileView({
       router.push("/login");
     });
   };
+
 
   const handleAvatarChange = (avatarVal: string) => {
     setCurrentAvatar(avatarVal);
@@ -561,46 +523,7 @@ export default function ProfileView({
         </div>
       </div>
 
-      {/* Theme Switcher Card */}
-      <div className="card p-4 mb-5 anim-slide delay-3 border border-border-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary-text flex items-center justify-center">
-              <Paintbrush size={16} />
-            </div>
-            <div>
-              <p className="text-xs font-black text-text-1">Apparence de l&apos;application</p>
-              <p className="text-[10px] text-text-3">Sauvegardé sur votre compte</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-1 bg-bg-surface p-1 rounded-xl border border-border-1">
-            <button
-              onClick={() => toggleTheme("dark")}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                theme === "dark"
-                  ? "bg-bg-card text-primary-text shadow-sm border border-border-2"
-                  : "text-text-4 hover:text-text-2"
-              }`}
-            >
-              <Moon size={13} />
-              <span>Sombre</span>
-            </button>
-
-            <button
-              onClick={() => toggleTheme("light")}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                theme === "light"
-                  ? "bg-amber-500 text-white shadow-sm font-black"
-                  : "text-text-4 hover:text-text-2"
-              }`}
-            >
-              <Sun size={13} />
-              <span>Clair</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Predictions History Ledger */}
       <div className="anim-slide delay-4">
