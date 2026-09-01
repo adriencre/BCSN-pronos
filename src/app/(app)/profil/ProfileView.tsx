@@ -28,6 +28,8 @@ import {
 import { logoutUser, updateProfile } from "@/lib/actions";
 import { AVATAR_OPTIONS } from "@/lib/constants";
 import UserAvatar from "@/components/UserAvatar";
+import NotificationSettings from "@/components/NotificationSettings";
+
 
 
 interface PredictionHistory {
@@ -523,10 +525,14 @@ export default function ProfileView({
         </div>
       </div>
 
-
+      {/* Web Push Notifications Settings */}
+      <div className="mb-5 anim-slide delay-4">
+        <NotificationSettings />
+      </div>
 
       {/* Predictions History Ledger */}
       <div className="anim-slide delay-4">
+
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <History size={15} className="text-primary-text" />

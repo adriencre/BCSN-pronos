@@ -4,6 +4,16 @@ import { supabase } from "./supabase";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { AVATAR_OPTIONS } from "./constants";
+import {
+  savePushSubscription,
+  deletePushSubscription,
+  sendPushToUser,
+  sendBroadcastPush,
+  sendMatchReminderToPendingUsers,
+  sendMatchResultPushNotifications,
+  getPushSubscribersStats,
+  type PushSubscriptionData,
+} from "./pushNotifications";
 
 
 // ─── Types & Helper Transformers ──────────────────────────────────────────────
@@ -412,6 +422,11 @@ export async function finishMatch(
     }
   }
 
+  // Déclencher l'envoi des notifications push de résultat personnalisé
+  sendMatchResultPushNotifications(matchId).catch((err) => {
+    console.error("Erreur lors de l'envoi des notifications de résultat:", err);
+  });
+
   return transformMatch(updatedMatch);
 }
 
@@ -679,4 +694,118 @@ export async function seedSampleMatches() {
 
   await supabase.from("matches").insert(matches);
   return { success: true };
+}
+
+// ─── Push Notification Server Actions ─────────────────────────────────────────
+
+export async function savePushSubscriptionAction(
+  subscription: PushSubscriptionData,
+  userAgent?: string
+) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "Vous devez être connecté pour activer les notifications" };
+  }
+
+  return await savePushSubscription(user.id, subscription, userAgent);
+}
+
+export async function removePushSubscriptionAction(endpoint: string) {
+  return await deletePushSubscription(endpoint);
+}
+
+export async function sendTestPushAction() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "Vous devez être connecté" };
+  }
+
+  const sentCount = await sendPushToUser(user.id, {
+    title: "🏀 Test BCSN Pronos validé !",
+    body: `Salut ${user.pseudo} ! Vos alertes push fonctionnent à merveille sur cet appareil. 🚀`,
+    url: "/profil",
+    tag: "test-notification",
+  });
+
+  if (sentCount === 0) {
+    return {
+      error: "Aucun appareil abonné trouvé pour ce compte. Veuillez réactiver le bouton.",
+    };
+  }
+
+  return { success: true, sentCount };
+}
+
+export async function sendAdminAnnouncementAction(
+  title: string,
+  body: string,
+  url?: string,
+  targetRole?: string
+) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return { error: "Accès réservé aux administrateurs" };
+  }
+
+  if (!title || !body) {
+    return { error: "Le titre et le message sont requis" };
+  }
+
+  const result = await sendBroadcastPush(
+    {
+      title,
+      body,
+      url: url || "/matchs",
+      tag: "admin-announcement",
+    },
+    { targetRole }
+  );
+
+  return {
+    success: true,
+    totalSent: result.totalSent,
+    totalDevices: result.totalDevices,
+    message: `${result.totalSent} notification(s) envoyée(s) sur ${result.totalDevices} appareil(s) !`,
+  };
+}
+
+export async function sendMatchReminderAction(matchId: number) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return { error: "Accès réservé aux administrateurs" };
+  }
+
+  return await sendMatchReminderToPendingUsers(matchId);
+}
+
+export async function getPushSubscribersStatsAction() {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return { totalDevices: 0, totalUsers: 0 };
+  }
+
+  return await getPushSubscribersStats();
+}
+
+export async function getMatchReminderPendingCount(matchId: number) {
+  try {
+    const { data: preds } = await supabase
+      .from("predictions")
+      .select("user_id")
+      .eq("match_id", matchId);
+
+    const predictedUserIds = (preds || []).map((p) => p.user_id);
+
+    let query = supabase.from("push_subscriptions").select("user_id", { count: "exact" });
+    if (predictedUserIds.length > 0) {
+      query = query.not("user_id", "in", `(${predictedUserIds.join(",")})`);
+    }
+
+    const { count, error } = await query;
+    if (error) return 0;
+    return count || 0;
+  } catch (err) {
+    console.error("Erreur getMatchReminderPendingCount:", err);
+    return 0;
+  }
 }

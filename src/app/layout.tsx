@@ -67,10 +67,20 @@ export default function RootLayout({
                   var obs = new MutationObserver(removeNetlifyBadge);
                   obs.observe(document.documentElement, { childList: true, subtree: true });
                 } catch(e){}
+
+                // Enregistrement du Service Worker pour les notifications Push
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function(err){
+                      console.log('SW registration error:', err);
+                    });
+                  });
+                }
               }
             })()`,
           }}
         />
+
       </head>
       <body className="font-sans bg-bg-base text-text-1 antialiased min-h-screen selection:bg-primary/30 selection:text-primary-text">
         {children}

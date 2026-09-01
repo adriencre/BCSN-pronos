@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
 
 # vercel
 .vercel
@@ -45,7 +47,8 @@ prisma/dev.db
 prisma/dev.db-journal
 
 # pwa
-public/sw.js
+# public/sw.js is tracked for push notifications
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
+
