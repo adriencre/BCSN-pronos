@@ -424,14 +424,22 @@ html.is-standalone [contenteditable="true"] {
 }
 
 /* ── Suppression totale du badge & pub Netlify ── */
-[class*="netlify-badge"],
-[id*="netlify-badge"],
+[class*="netlify"],
+[id*="netlify"],
+[data-netlify],
 [data-netlify-badge],
+[data-netlify-drawer],
+[data-testid*="netlify"],
+netlify-drawer,
 .netlify-badge,
 #netlify-badge,
+#netlify-feedback-drawer,
 a[href*="netlify.com"],
 img[src*="netlify.com"],
-iframe[src*="netlify.com"] {
+iframe[src*="netlify"],
+iframe[title*="Netlify" i],
+iframe[title*="Feedback" i],
+div[style*="2147483647"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;

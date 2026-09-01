@@ -68,19 +68,22 @@ export default function RootLayout({
 
               function removeNetlifyBadge(){
                 try {
-                  var els = document.querySelectorAll('a[href*="netlify.com"], [class*="netlify-badge"], [id*="netlify-badge"], [data-netlify-badge], .netlify-badge, iframe[src*="netlify"]');
+                  var sel = 'a[href*="netlify.com"], [class*="netlify"], [id*="netlify"], [data-netlify], [data-netlify-badge], [data-netlify-drawer], [data-testid*="netlify"], netlify-drawer, .netlify-badge, #netlify-badge, #netlify-feedback-drawer, iframe[src*="netlify"], iframe[title*="Netlify" i], iframe[title*="Feedback" i], div[style*="2147483647"]';
+                  var els = document.querySelectorAll(sel);
                   els.forEach(function(el){
                     if(el && el.parentNode){ el.parentNode.removeChild(el); }
                   });
                 } catch(e){}
               }
               if(typeof window !== 'undefined'){
+                removeNetlifyBadge();
                 document.addEventListener('DOMContentLoaded', removeNetlifyBadge);
                 window.addEventListener('load', removeNetlifyBadge);
                 try {
                   var obs = new MutationObserver(removeNetlifyBadge);
                   obs.observe(document.documentElement, { childList: true, subtree: true });
                 } catch(e){}
+                setInterval(removeNetlifyBadge, 500);
 
                 // Enregistrement du Service Worker pour les notifications Push
                 if ('serviceWorker' in navigator) {
