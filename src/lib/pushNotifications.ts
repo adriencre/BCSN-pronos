@@ -382,3 +382,37 @@ export async function getPushSubscribersStats() {
     return { totalDevices: 0, totalUsers: 0 };
   }
 }
+
+/**
+ * Vérifie et envoie automatiquement les rappels pour les matchs débutant dans les 2 à 3 heures à venir
+ */
+export async function checkAndSendAutomatedMatchReminders() {
+  try {
+    const now = new Date();
+    // Fenêtre de rappel : matchs débutant entre maintenant et dans 3h
+    const windowStart = new Date(now.getTime());
+    const windowEnd = new Date(now.getTime() + 3.5 * 60 * 60 * 1000);
+
+    const { data: upcomingMatches, error } = await supabase
+      .from("matches")
+      .select("id, opponent, date_time, is_home, status")
+      .eq("status", "PENDING")
+      .gte("date_time", windowStart.toISOString())
+      .lte("date_time", windowEnd.toISOString());
+
+    if (error || !upcomingMatches || upcomingMatches.length === 0) {
+      return { success: true, count: 0, message: "Aucun match nécessitant un rappel immédiat." };
+    }
+
+    const processedMatches = [];
+    for (const match of upcomingMatches) {
+      const res = await sendMatchReminderToPendingUsers(match.id);
+      processedMatches.push({ matchId: match.id, opponent: match.opponent, result: res });
+    }
+
+    return { success: true, processedMatches };
+  } catch (err: any) {
+    console.error("Erreur checkAndSendAutomatedMatchReminders:", err);
+    return { error: err.message || "Erreur lors de la vérification automatique des rappels" };
+  }
+}

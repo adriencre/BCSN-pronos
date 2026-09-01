@@ -12,6 +12,7 @@ import {
   sendMatchReminderToPendingUsers,
   sendMatchResultPushNotifications,
   getPushSubscribersStats,
+  checkAndSendAutomatedMatchReminders,
   type PushSubscriptionData,
 } from "./pushNotifications";
 
@@ -166,6 +167,9 @@ export const getActiveMatch = cache(async function getActiveMatch() {
   const nextMatch = transformMatch(data[0]);
   const { opensAt, closesAt } = await getVotingWindow(nextMatch.dateTime);
   const isVotingOpen = now >= opensAt && now < closesAt;
+
+  // Vérification et envoi automatique opportuniste des rappels en arrière-plan
+  checkAndSendAutomatedMatchReminders().catch(() => {});
 
   return {
     match: nextMatch,
