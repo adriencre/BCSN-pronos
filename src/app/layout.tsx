@@ -49,10 +49,33 @@ export default function RootLayout({
     >
       <head>
         <link rel="apple-touch-icon" href="/logo-192.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              function removeNetlifyBadge(){
+                try {
+                  var els = document.querySelectorAll('a[href*="netlify.com"], [class*="netlify-badge"], [id*="netlify-badge"], [data-netlify-badge], .netlify-badge, iframe[src*="netlify"]');
+                  els.forEach(function(el){
+                    if(el && el.parentNode){ el.parentNode.removeChild(el); }
+                  });
+                } catch(e){}
+              }
+              if(typeof window !== 'undefined'){
+                document.addEventListener('DOMContentLoaded', removeNetlifyBadge);
+                window.addEventListener('load', removeNetlifyBadge);
+                try {
+                  var obs = new MutationObserver(removeNetlifyBadge);
+                  obs.observe(document.documentElement, { childList: true, subtree: true });
+                } catch(e){}
+              }
+            })()`,
+          }}
+        />
       </head>
       <body className="font-sans bg-bg-base text-text-1 antialiased min-h-screen selection:bg-primary/30 selection:text-primary-text">
         {children}
       </body>
+
     </html>
   );
 }

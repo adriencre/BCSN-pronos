@@ -405,3 +405,24 @@ html.light .tab-bar > div {
   background-clip: text;
   animation: shimmer 3s linear infinite;
 }
+
+/* ── Suppression totale du badge & pub Netlify ── */
+[class*="netlify-badge"],
+[id*="netlify-badge"],
+[data-netlify-badge],
+.netlify-badge,
+#netlify-badge,
+a[href*="netlify.com"],
+img[src*="netlify.com"],
+iframe[src*="netlify.com"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0) !important;
+  z-index: -99999 !important;
+}
+
