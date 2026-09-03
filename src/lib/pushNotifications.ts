@@ -218,21 +218,40 @@ export async function sendBroadcastPush(
   }
 }
 
+export type ReminderType = "24H" | "2H" | "MANUAL";
+
+export interface MatchReminderStatus {
+  matchId: number;
+  reminder24h: { sent: boolean; sentAt?: string; recipientsCount?: number };
+  reminder2h: { sent: boolean; sentAt?: string; recipientsCount?: number };
+}
+
 /**
- * Envoie un rappel de match aux personnes n'ayant pas encore pronostiqué
+ * Envoie un rappel de match ciblé aux personnes n'ayant pas encore pronostiqué
+ * Prend en charge les relances automatiques "24H" (J-1), "2H" (H-2) ou "MANUAL"
  */
-export async function sendMatchReminderToPendingUsers(matchId: number) {
+export async function sendMatchReminderToPendingUsers(
+  matchId: number,
+  reminderType: ReminderType = "MANUAL"
+) {
   try {
-    // 1. Récupérer le match
+    // 1. Récupérer les infos du match
     const { data: match, error: matchErr } = await supabase
       .from("matches")
-      .select("id, opponent, date_time, is_home")
+      .select("id, opponent, date_time, is_home, reminder_24h_sent, reminder_2h_sent")
       .eq("id", matchId)
       .single();
 
     if (matchErr || !match) {
       return { error: "Match introuvable" };
     }
+
+    const matchDate = new Date(match.date_time);
+    const formattedTime = matchDate.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const matchLocation = match.is_home ? "à domicile" : "à l'extérieur";
 
     // 2. Récupérer les utilisateurs ayant déjà pronostiqué
     const { data: preds } = await supabase
@@ -253,32 +272,187 @@ export async function sendMatchReminderToPendingUsers(matchId: number) {
 
     const { data: pendingSubs, error: subsErr } = await subQuery;
 
-    if (subsErr || !pendingSubs || pendingSubs.length === 0) {
-      return { success: true, count: 0, message: "Tous les abonnés ont déjà pronostiqué ou aucun abonné actif." };
+    // Définir le message adapté selon le type de relance
+    let payload: PushPayload;
+    if (reminderType === "24H") {
+      payload = {
+        title: `🏀 J-1 : BCSN vs ${match.opponent}`,
+        body: `⏳ Coup d'envoi demain à ${formattedTime} (${matchLocation}) ! Tu n'as pas encore placé ton pronostic. Qui va l'emporter ?`,
+        url: "/matchs",
+        tag: `match-reminder-24h-${match.id}`,
+      };
+    } else if (reminderType === "2H") {
+      payload = {
+        title: `⚡ H-2 : BCSN vs ${match.opponent} (Dernier appel)`,
+        body: `🚨 Coup d'envoi à ${formattedTime} ! Plus que 2 heures pour valider ton prono avant la clôture. Ne perds pas de points !`,
+        url: "/matchs",
+        tag: `match-reminder-2h-${match.id}`,
+      };
+    } else {
+      payload = {
+        title: `🏀 Rappel Prono : BCSN vs ${match.opponent}`,
+        body: `⚠️ N'oublie pas ton prono (${matchLocation} à ${formattedTime}) ! Viens soutenir l'équipe et marquer des points.`,
+        url: "/matchs",
+        tag: `match-reminder-${match.id}`,
+      };
     }
 
-    const matchLocation = match.is_home ? "à domicile" : "à l'extérieur";
-    const payload: PushPayload = {
-      title: `🏀 Rappel Match : BCSN vs ${match.opponent}`,
-      body: `⚠️ N'oublie pas ton prono ! Le coup d'envoi approche (${matchLocation}). Viens marquer des points !`,
-      url: "/matchs",
-      tag: `match-reminder-${match.id}`,
-    };
+    // Si aucun retardataire n'est trouvé
+    if (subsErr || !pendingSubs || pendingSubs.length === 0) {
+      // On trace quand même le rappel comme traité pour que le cron ne boucle pas
+      await markReminderAsSent(matchId, reminderType, 0);
+      return {
+        success: true,
+        count: 0,
+        reminderType,
+        message: "Tous les abonnés ont déjà pronostiqué pour ce match !",
+      };
+    }
 
+    // 4. Envoi effectif des push
     const results = await Promise.allSettled(
       pendingSubs.map((sub) => sendPushToSubscription(sub, payload))
     );
 
     const count = results.filter((r) => r.status === "fulfilled" && r.value === true).length;
+
+    // 5. Enregistrer l'historique et mettre à jour le statut anti-doublon
+    await markReminderAsSent(matchId, reminderType, count);
+
+    const typeLabel =
+      reminderType === "24H" ? "Rappel J-1 (24h)" : reminderType === "2H" ? "Rappel H-2 (2h)" : "Rappel";
+
     return {
       success: true,
       count,
+      reminderType,
       totalPending: pendingSubs.length,
-      message: `${count} rappel(s) envoyé(s) avec succès !`,
+      message: `${typeLabel} envoyé à ${count} retardataire(s) avec succès !`,
     };
   } catch (err: any) {
     console.error("Erreur sendMatchReminderToPendingUsers:", err);
     return { error: err.message || "Erreur lors de l'envoi du rappel" };
+  }
+}
+
+/**
+ * Enregistre le rappel envoyé dans match_reminders et met à jour les flags du match
+ */
+async function markReminderAsSent(matchId: number, reminderType: ReminderType, count: number) {
+  const nowIso = new Date().toISOString();
+
+  // 1. Enregistrement dans match_reminders (table dédiée)
+  try {
+    await supabase.from("match_reminders").upsert(
+      {
+        match_id: matchId,
+        reminder_type: reminderType,
+        recipients_count: count,
+        sent_at: nowIso,
+      },
+      { onConflict: "match_id,reminder_type" }
+    );
+  } catch (err) {
+    // Si la table n'a pas encore été créée, on continue gracieusement
+    console.warn("Impossible d'insérer dans match_reminders:", err);
+  }
+
+  // 2. Mise à jour des colonnes sur matches
+  try {
+    const updatePayload: Record<string, any> = {};
+    if (reminderType === "24H") {
+      updatePayload.reminder_24h_sent = true;
+      updatePayload.reminder_24h_at = nowIso;
+    } else if (reminderType === "2H") {
+      updatePayload.reminder_2h_sent = true;
+      updatePayload.reminder_2h_at = nowIso;
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from("matches").update(updatePayload).eq("id", matchId);
+    }
+  } catch (err) {
+    console.warn("Impossible de mettre à jour les colonnes reminder sur matches:", err);
+  }
+}
+
+/**
+ * Récupère le statut des rappels (24h et 2h) pour un match donné
+ */
+export async function getMatchRemindersStatus(matchId: number): Promise<MatchReminderStatus> {
+  const status: MatchReminderStatus = {
+    matchId,
+    reminder24h: { sent: false },
+    reminder2h: { sent: false },
+  };
+
+  try {
+    // Vérification table match_reminders
+    const { data: logs } = await supabase
+      .from("match_reminders")
+      .select("reminder_type, sent_at, recipients_count")
+      .eq("match_id", matchId);
+
+    if (logs && logs.length > 0) {
+      for (const log of logs) {
+        if (log.reminder_type === "24H") {
+          status.reminder24h = {
+            sent: true,
+            sentAt: log.sent_at,
+            recipientsCount: log.recipients_count,
+          };
+        } else if (log.reminder_type === "2H") {
+          status.reminder2h = {
+            sent: true,
+            sentAt: log.sent_at,
+            recipientsCount: log.recipients_count,
+          };
+        }
+      }
+    } else {
+      // Fallback sur les colonnes de matches
+      const { data: match } = await supabase
+        .from("matches")
+        .select("reminder_24h_sent, reminder_2h_sent, reminder_24h_at, reminder_2h_at")
+        .eq("id", matchId)
+        .single();
+
+      if (match) {
+        if (match.reminder_24h_sent) {
+          status.reminder24h = { sent: true, sentAt: match.reminder_24h_at };
+        }
+        if (match.reminder_2h_sent) {
+          status.reminder2h = { sent: true, sentAt: match.reminder_2h_at };
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erreur getMatchRemindersStatus:", err);
+  }
+
+  return status;
+}
+
+/**
+ * Réinitialise les flags de rappel pour un match (ex: en cas de report de date)
+ */
+export async function resetMatchReminders(matchId: number) {
+  try {
+    await supabase.from("match_reminders").delete().eq("match_id", matchId);
+    await supabase
+      .from("matches")
+      .update({
+        reminder_24h_sent: false,
+        reminder_2h_sent: false,
+        reminder_24h_at: null,
+        reminder_2h_at: null,
+      })
+      .eq("id", matchId);
+
+    return { success: true, message: "Rappels réinitialisés pour ce match." };
+  } catch (err: any) {
+    console.error("Erreur resetMatchReminders:", err);
+    return { error: err.message };
   }
 }
 
@@ -384,35 +558,144 @@ export async function getPushSubscribersStats() {
 }
 
 /**
- * Vérifie et envoie automatiquement les rappels pour les matchs débutant dans les 2 à 3 heures à venir
+ * Vérifie et envoie automatiquement les rappels intelligents (24h et 2h avant coup d'envoi)
+ * aux retardataires, sans jamais envoyer de doublon.
  */
 export async function checkAndSendAutomatedMatchReminders() {
   try {
     const now = new Date();
-    // Fenêtre de rappel : matchs débutant entre maintenant et dans 3h
-    const windowStart = new Date(now.getTime());
-    const windowEnd = new Date(now.getTime() + 3.5 * 60 * 60 * 1000);
+
+    // On analyse les matchs PENDING dans les prochaines 36 heures
+    const maxLookahead = new Date(now.getTime() + 36 * 60 * 60 * 1000);
 
     const { data: upcomingMatches, error } = await supabase
       .from("matches")
-      .select("id, opponent, date_time, is_home, status")
+      .select("*")
       .eq("status", "PENDING")
-      .gte("date_time", windowStart.toISOString())
-      .lte("date_time", windowEnd.toISOString());
+      .gte("date_time", now.toISOString())
+      .lte("date_time", maxLookahead.toISOString())
+      .order("date_time", { ascending: true });
 
     if (error || !upcomingMatches || upcomingMatches.length === 0) {
-      return { success: true, count: 0, message: "Aucun match nécessitant un rappel immédiat." };
+      return {
+        success: true,
+        checkedMatchesCount: 0,
+        sent24hCount: 0,
+        sent2hCount: 0,
+        message: "Aucun match à venir nécessitant une relance.",
+      };
     }
 
-    const processedMatches = [];
+    // Récupérer les logs d'envois existants pour vérifier les doublons
+    const sentLogsMap = new Set<string>();
+    try {
+      const matchIds = upcomingMatches.map((m) => m.id);
+      const { data: logs } = await supabase
+        .from("match_reminders")
+        .select("match_id, reminder_type")
+        .in("match_id", matchIds);
+
+      (logs || []).forEach((l) => sentLogsMap.add(`${l.match_id}-${l.reminder_type}`));
+    } catch (e) {
+      console.warn("Table match_reminders indisponible lors du check, utilisation des colonnes matches:", e);
+    }
+
+    const processedMatches: Array<{
+      matchId: number;
+      opponent: string;
+      dateTime: string;
+      hoursUntil: number;
+      actionTaken: string;
+      result?: any;
+    }> = [];
+
+    let sent24hCount = 0;
+    let sent2hCount = 0;
+
     for (const match of upcomingMatches) {
-      const res = await sendMatchReminderToPendingUsers(match.id);
-      processedMatches.push({ matchId: match.id, opponent: match.opponent, result: res });
+      const matchTime = new Date(match.date_time).getTime();
+      const hoursUntil = (matchTime - now.getTime()) / (1000 * 60 * 60);
+
+      const alreadySent24h =
+        sentLogsMap.has(`${match.id}-24H`) || match.reminder_24h_sent === true;
+      const alreadySent2h =
+        sentLogsMap.has(`${match.id}-2H`) || match.reminder_2h_sent === true;
+
+      // 1. Fenêtre 24H (J-1) : entre 20h et 28h avant le coup d'envoi
+      if (hoursUntil >= 20 && hoursUntil <= 28) {
+        if (!alreadySent24h) {
+          const res = await sendMatchReminderToPendingUsers(match.id, "24H");
+          sent24hCount += (res && res.count) || 0;
+          processedMatches.push({
+            matchId: match.id,
+            opponent: match.opponent,
+            dateTime: match.date_time,
+            hoursUntil: Math.round(hoursUntil * 10) / 10,
+            actionTaken: "SENT_24H",
+            result: res,
+          });
+          continue;
+        } else {
+          processedMatches.push({
+            matchId: match.id,
+            opponent: match.opponent,
+            dateTime: match.date_time,
+            hoursUntil: Math.round(hoursUntil * 10) / 10,
+            actionTaken: "ALREADY_SENT_24H",
+          });
+        }
+      }
+
+      // 2. Fenêtre 2H (H-2) : entre 45 minutes (0.75h) et 3h30 (3.5h) avant le coup d'envoi
+      if (hoursUntil >= 0.75 && hoursUntil <= 3.5) {
+        if (!alreadySent2h) {
+          const res = await sendMatchReminderToPendingUsers(match.id, "2H");
+          sent2hCount += (res && res.count) || 0;
+          processedMatches.push({
+            matchId: match.id,
+            opponent: match.opponent,
+            dateTime: match.date_time,
+            hoursUntil: Math.round(hoursUntil * 10) / 10,
+            actionTaken: "SENT_2H",
+            result: res,
+          });
+          continue;
+        } else {
+          processedMatches.push({
+            matchId: match.id,
+            opponent: match.opponent,
+            dateTime: match.date_time,
+            hoursUntil: Math.round(hoursUntil * 10) / 10,
+            actionTaken: "ALREADY_SENT_2H",
+          });
+        }
+      }
+
+      // Hors fenêtre active
+      if (
+        !processedMatches.some((p) => p.matchId === match.id)
+      ) {
+        processedMatches.push({
+          matchId: match.id,
+          opponent: match.opponent,
+          dateTime: match.date_time,
+          hoursUntil: Math.round(hoursUntil * 10) / 10,
+          actionTaken: `OUTSIDE_WINDOW (J-1: ${alreadySent24h ? "Fait" : "À venir"}, H-2: ${alreadySent2h ? "Fait" : "À venir"})`,
+        });
+      }
     }
 
-    return { success: true, processedMatches };
+    return {
+      success: true,
+      checkedMatchesCount: upcomingMatches.length,
+      sent24hCount,
+      sent2hCount,
+      processedMatches,
+      message: `Analyse terminée : ${sent24hCount} rappel(s) 24h et ${sent2hCount} rappel(s) 2h envoyés.`,
+    };
   } catch (err: any) {
     console.error("Erreur checkAndSendAutomatedMatchReminders:", err);
     return { error: err.message || "Erreur lors de la vérification automatique des rappels" };
   }
 }
+

@@ -24,7 +24,11 @@ interface Props {
 export default function ClubDetailView({ club }: Props) {
   const router = useRouter();
   const winRate = Math.round((club.wins / (club.wins + club.losses)) * 100);
-  const logoPath = getClubLogoPath(club.id) || getClubLogoPath(club.shortName);
+  const logoPath =
+    getClubLogoPath(club.id) ||
+    getClubLogoPath(club.shortName) ||
+    getClubLogoPath(club.name) ||
+    getClubLogoPath(club.fullName);
 
   return (
     <div className="px-4 pt-4 pb-12">

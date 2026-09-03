@@ -24,6 +24,10 @@ import {
   CheckCircle2,
   Radio,
   Loader2,
+  Copy,
+  Check,
+  RotateCcw,
+  Zap,
 } from "lucide-react";
 import {
   submitMatchResult,
@@ -32,7 +36,11 @@ import {
   sendAdminAnnouncementAction,
   getPushSubscribersStatsAction,
   getMatchReminderPendingCount,
+  getMatchRemindersStatusAction,
+  resetMatchRemindersAction,
+  runAutomatedRemindersAction,
 } from "@/lib/actions";
+import type { ReminderType, MatchReminderStatus } from "@/lib/pushNotifications";
 import { getClubLogoPath } from "@/lib/clubsData";
 
 interface MatchItem {
@@ -63,7 +71,11 @@ export default function AdminScoresView({ matches }: Props) {
   // Push Notifications Admin State
   const [subStats, setSubStats] = useState<{ totalDevices: number; totalUsers: number } | null>(null);
   const [reminderPendingCount, setReminderPendingCount] = useState<number | null>(null);
-  const [reminderSending, setReminderSending] = useState(false);
+  const [reminderStatus, setReminderStatus] = useState<MatchReminderStatus | null>(null);
+  const [sendingType, setSendingType] = useState<ReminderType | null>(null);
+  const [cronTestRunning, setCronTestRunning] = useState(false);
+  const [cronTestResult, setCronTestResult] = useState<any>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const [announcementSending, setAnnouncementSending] = useState(false);
   const [announcementTitle, setAnnouncementTitle] = useState("🏀 Flash Info BCSN");
   const [announcementBody, setAnnouncementBody] = useState("");
@@ -82,15 +94,19 @@ export default function AdminScoresView({ matches }: Props) {
   const finishedMatches = matches.filter((m) => m.status === "FINISHED");
   const nextMatch = pendingMatches.length > 0 ? pendingMatches[0] : null;
 
-  // Charger les stats de notifications
+  // Charger les stats de notifications & statut des rappels
   useEffect(() => {
     async function loadStats() {
       const stats = await getPushSubscribersStatsAction();
       setSubStats(stats);
 
       if (nextMatch) {
-        const pendingCount = await getMatchReminderPendingCount(nextMatch.id);
+        const [pendingCount, status] = await Promise.all([
+          getMatchReminderPendingCount(nextMatch.id),
+          getMatchRemindersStatusAction(nextMatch.id),
+        ]);
         setReminderPendingCount(pendingCount);
+        setReminderStatus(status);
       }
     }
     loadStats();
@@ -130,11 +146,11 @@ export default function AdminScoresView({ matches }: Props) {
     });
   };
 
-  const handleSendReminder = async (matchId: number) => {
-    setReminderSending(true);
+  const handleSendReminder = async (matchId: number, type: ReminderType = "MANUAL") => {
+    setSendingType(type);
     setNotificationMsg(null);
     try {
-      const res = await sendMatchReminderAction(matchId);
+      const res = await sendMatchReminderAction(matchId, type);
       if ("error" in res && res.error) {
         setNotificationMsg({ type: "error", text: String(res.error) });
       } else {
@@ -142,13 +158,65 @@ export default function AdminScoresView({ matches }: Props) {
           type: "success",
           text: res.message || "Rappels envoyés avec succès !",
         });
-        const updated = await getMatchReminderPendingCount(matchId);
-        setReminderPendingCount(updated);
+        const [updatedPending, updatedStatus] = await Promise.all([
+          getMatchReminderPendingCount(matchId),
+          getMatchRemindersStatusAction(matchId),
+        ]);
+        setReminderPendingCount(updatedPending);
+        setReminderStatus(updatedStatus);
       }
     } catch (err: any) {
       setNotificationMsg({ type: "error", text: err.message || "Erreur lors de l'envoi du rappel." });
     }
-    setReminderSending(false);
+    setSendingType(null);
+  };
+
+  const handleResetReminders = async (matchId: number) => {
+    if (!confirm("Voulez-vous réinitialiser le statut des rappels pour ce match ?")) return;
+    try {
+      await resetMatchRemindersAction(matchId);
+      const updatedStatus = await getMatchRemindersStatusAction(matchId);
+      setReminderStatus(updatedStatus);
+      setNotificationMsg({ type: "success", text: "Suivi des rappels réinitialisé pour ce match." });
+    } catch (err: any) {
+      setNotificationMsg({ type: "error", text: err.message || "Erreur de réinitialisation." });
+    }
+  };
+
+  const handleRunCronTest = async () => {
+    setCronTestRunning(true);
+    setCronTestResult(null);
+    setNotificationMsg(null);
+    try {
+      const res = await runAutomatedRemindersAction();
+      setCronTestResult(res);
+      if ("error" in res && res.error) {
+        setNotificationMsg({ type: "error", text: String(res.error) });
+      } else {
+        setNotificationMsg({
+          type: "success",
+          text: res.message || "Vérification automatique exécutée avec succès !",
+        });
+        if (nextMatch) {
+          const [updatedPending, updatedStatus] = await Promise.all([
+            getMatchReminderPendingCount(nextMatch.id),
+            getMatchRemindersStatusAction(nextMatch.id),
+          ]);
+          setReminderPendingCount(updatedPending);
+          setReminderStatus(updatedStatus);
+        }
+      }
+    } catch (err: any) {
+      setNotificationMsg({ type: "error", text: err.message || "Erreur lors du test du cron." });
+    }
+    setCronTestRunning(false);
+  };
+
+  const handleCopyCronUrl = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://bcsn-pronos.netlify.app";
+    navigator.clipboard.writeText(`${origin}/api/cron/reminders`);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2500);
   };
 
   const handleSendAnnouncement = async (e: React.FormEvent) => {
@@ -388,11 +456,11 @@ export default function AdminScoresView({ matches }: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleSendReminder(nextMatch.id)}
-                  disabled={reminderSending}
+                  onClick={() => handleSendReminder(nextMatch.id, "MANUAL")}
+                  disabled={sendingType !== null}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all disabled:opacity-50"
                 >
-                  {reminderSending ? (
+                  {sendingType !== null ? (
                     <Loader2 size={12} className="animate-spin" />
                   ) : (
                     <Send size={12} />
@@ -585,31 +653,43 @@ export default function AdminScoresView({ matches }: Props) {
             )}
           </div>
 
-          {/* Card 1: Rappel Avant-Match */}
-          <div className="card p-4 border border-border-1 space-y-3">
+          {/* Card 1: Relances Automatiques Intelligentes (24h & 2h) */}
+          <div className="card p-4 border border-border-1 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold">
-                  ⏰
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold text-sm shadow-sm border border-amber-500/30">
+                  🔔
                 </div>
-                <h3 className="text-xs font-black text-text-1 uppercase tracking-wider">
-                  Rappel Avant-Match Retardataires
-                </h3>
+                <div>
+                  <h3 className="text-xs font-black text-text-1 uppercase tracking-wider">
+                    Relances Push Intelligentes (24h & 2h)
+                  </h3>
+                  <p className="text-[10px] text-text-4 font-medium">
+                    Ciblent uniquement les retardataires • Système anti-doublon actif
+                  </p>
+                </div>
               </div>
               {reminderPendingCount !== null && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono shadow-sm">
                   {reminderPendingCount} retardataire(s)
                 </span>
               )}
             </div>
 
             {nextMatch ? (
-              <div className="bg-bg-surface p-3 rounded-xl border border-border-1 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-text-1">
-                    BCSN vs {nextMatch.opponent}
-                  </span>
-                  <span className="text-[11px] text-text-3">
+              <div className="space-y-3">
+                {/* Match Summary Header */}
+                <div className="bg-bg-surface p-3 rounded-2xl border border-border-1 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-black text-text-1">
+                      BCSN vs {nextMatch.opponent}
+                    </span>
+                    <span className="text-[10px] text-text-3 font-medium">
+                      ({nextMatch.isHome ? "Domicile" : "Extérieur"})
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-bold text-primary-text flex items-center gap-1.5">
+                    <Clock size={12} />
                     {new Date(nextMatch.dateTime).toLocaleDateString("fr-FR", {
                       weekday: "short",
                       day: "numeric",
@@ -617,32 +697,205 @@ export default function AdminScoresView({ matches }: Props) {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-                  </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-text-3">
-                  Envoie une alerte ciblée sur le smartphone de tous les abonnés qui n&apos;ont pas encore placé leur pronostic.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleSendReminder(nextMatch.id)}
-                  disabled={reminderSending}
-                  className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-md disabled:opacity-50"
-                >
-                  {reminderSending ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Send size={14} />
-                  )}
-                  <span>
-                    {reminderSending
-                      ? "Envoi des rappels..."
-                      : `Envoyer le rappel aux ${reminderPendingCount ?? 0} retardataire(s)`}
-                  </span>
-                </button>
+
+                {/* Sub-cards: 24h & 2h */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option A: Rappel J-1 (24h) */}
+                  <div className="bg-bg-surface/80 p-3.5 rounded-2xl border border-border-1 flex flex-col justify-between space-y-3 relative overflow-hidden">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-text-1 flex items-center gap-1.5">
+                          <span>🏀</span> Rappel J-1 (24h)
+                        </span>
+                        {reminderStatus?.reminder24h.sent ? (
+                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <Check size={10} strokeWidth={3} /> Envoyé
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                            Automatique
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-text-3 leading-relaxed">
+                        Message d&apos;anticipation pour annoncer le match du lendemain et inviter à placer son prono.
+                      </p>
+                      {reminderStatus?.reminder24h.sent && reminderStatus.reminder24h.sentAt && (
+                        <p className="text-[10px] font-mono text-text-4 mt-1.5">
+                          Envoyé le{" "}
+                          {new Date(reminderStatus.reminder24h.sentAt).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          ({reminderStatus.reminder24h.recipientsCount ?? 0} destinataire(s))
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSendReminder(nextMatch.id, "24H")}
+                      disabled={sendingType !== null}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 transition-all disabled:opacity-50"
+                    >
+                      {sendingType === "24H" ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Send size={13} />
+                      )}
+                      <span>
+                        {sendingType === "24H" ? "Envoi..." : "Déclencher J-1 (24h)"}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Option B: Rappel H-2 (2h) */}
+                  <div className="bg-bg-surface/80 p-3.5 rounded-2xl border border-border-1 flex flex-col justify-between space-y-3 relative overflow-hidden">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-black text-text-1 flex items-center gap-1.5">
+                          <span>⚡</span> Rappel H-2 (Dernier appel)
+                        </span>
+                        {reminderStatus?.reminder2h.sent ? (
+                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <Check size={10} strokeWidth={3} /> Envoyé
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            Automatique
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-text-3 leading-relaxed">
+                        Alerte d&apos;urgence rappelant que les pronostics ferment dans 2h au coup d&apos;envoi.
+                      </p>
+                      {reminderStatus?.reminder2h.sent && reminderStatus.reminder2h.sentAt && (
+                        <p className="text-[10px] font-mono text-text-4 mt-1.5">
+                          Envoyé le{" "}
+                          {new Date(reminderStatus.reminder2h.sentAt).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          ({reminderStatus.reminder2h.recipientsCount ?? 0} destinataire(s))
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSendReminder(nextMatch.id, "2H")}
+                      disabled={sendingType !== null}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black shadow-md transition-all disabled:opacity-50"
+                    >
+                      {sendingType === "2H" ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Zap size={13} />
+                      )}
+                      <span>
+                        {sendingType === "2H" ? "Envoi..." : "Déclencher H-2 (Urgence)"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset helper if reminders were triggered */}
+                {(reminderStatus?.reminder24h.sent || reminderStatus?.reminder2h.sent) && (
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleResetReminders(nextMatch.id)}
+                      className="text-[10px] text-text-4 hover:text-rose-400 flex items-center gap-1 transition-colors"
+                    >
+                      <RotateCcw size={11} />
+                      <span>Réinitialiser le suivi des rappels de ce match</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <p className="text-xs text-text-4 italic">Aucun match à venir.</p>
+              <p className="text-xs text-text-4 italic">Aucun match programmé.</p>
             )}
+          </div>
+
+          {/* Card: Moteur d'automatisation Cron & Test en direct */}
+          <div className="card p-4 border border-border-1 bg-gradient-to-br from-bg-card to-slate-900 space-y-3.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-sm border border-emerald-500/30">
+                  ⚙️
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-text-1 uppercase tracking-wider">
+                    Automatisation Cron (GitHub Actions)
+                  </h3>
+                  <p className="text-[10px] text-text-3 font-medium">
+                    Vérification horaire active • Relances déclenchées sans intervention
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRunCronTest}
+                disabled={cronTestRunning}
+                className="py-1.5 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition-all disabled:opacity-50"
+              >
+                {cronTestRunning ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={13} />
+                )}
+                <span>{cronTestRunning ? "Test en cours..." : "Tester le Cron maintenant"}</span>
+              </button>
+            </div>
+
+            {/* Live Test Result */}
+            {cronTestResult && (
+              <div className="p-3 rounded-xl bg-bg-surface border border-border-1 text-xs space-y-1.5 anim-fade">
+                <div className="flex items-center justify-between text-[11px] font-bold">
+                  <span className="text-emerald-400">
+                    ✓ Exécution terminée ({cronTestResult.durationMs ? `${cronTestResult.durationMs}ms` : "OK"})
+                  </span>
+                  <span className="text-text-4 text-[10px] font-mono">
+                    {cronTestResult.timestamp ? new Date(cronTestResult.timestamp).toLocaleTimeString() : ""}
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-2">
+                  {cronTestResult.message || `${cronTestResult.checkedMatchesCount ?? 0} match(s) analysé(s)`}
+                </p>
+                {cronTestResult.processedMatches && cronTestResult.processedMatches.length > 0 && (
+                  <div className="pt-1.5 border-t border-border-1/50 space-y-1">
+                    {cronTestResult.processedMatches.map((pm: any, idx: number) => (
+                      <div key={idx} className="text-[10px] flex items-center justify-between text-text-3">
+                        <span>vs {pm.opponent} ({pm.hoursUntil}h avant)</span>
+                        <span className="font-mono font-bold text-text-2">{pm.actionTaken}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Webhook URL bar */}
+            <div className="flex items-center gap-2 bg-bg-surface p-2 rounded-xl border border-border-1">
+              <span className="text-[10px] font-mono text-text-4 truncate flex-1 select-all">
+                https://bcsn-pronos.netlify.app/api/cron/reminders
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyCronUrl}
+                className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-bg-elevated hover:bg-bg-card text-text-2 border border-border-1 flex items-center gap-1 transition-all shrink-0"
+              >
+                {copiedUrl ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                <span>{copiedUrl ? "Copié !" : "Copier URL"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Card 2: Annonce Flash Club */}

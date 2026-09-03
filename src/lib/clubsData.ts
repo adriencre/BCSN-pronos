@@ -291,21 +291,118 @@ export function getClubLogoPath(nameStr: string): string | null {
 }
 
 
+function normalizeClubString(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export function getClubBySlug(slug: string): ClubProfile {
-  const normalized = slug.toLowerCase().replace(/[^a-z0-9]/g, "");
-  for (const [key, club] of Object.entries(CLUBS_DATA)) {
-    if (
-      key === normalized ||
-      club.shortName.toLowerCase().replace(/[^a-z0-9]/g, "") === normalized ||
-      club.id === normalized
-    ) {
+  if (!slug) return CLUBS_DATA.bcsn;
+
+  const rawLower = slug.toLowerCase();
+  const normalized = normalizeClubString(slug);
+
+  // 1. Direct match on key or id
+  if (CLUBS_DATA[normalized]) {
+    return CLUBS_DATA[normalized];
+  }
+  for (const club of Object.values(CLUBS_DATA)) {
+    if (club.id === normalized || club.id === rawLower) {
       return club;
     }
   }
-  return CLUBS_DATA.bcsn;
+
+  // 2. Direct match on shortName, name or fullName
+  for (const club of Object.values(CLUBS_DATA)) {
+    const normShort = normalizeClubString(club.shortName);
+    const normName = normalizeClubString(club.name);
+    const normFull = normalizeClubString(club.fullName);
+    if (normalized === normShort || normalized === normName || normalized === normFull) {
+      return club;
+    }
+  }
+
+  // 3. Keyword / Substring intelligent matching
+  const isExplicitBcsn =
+    normalized.includes("bcsn") ||
+    normalized.includes("saintnicolas") ||
+    rawLower.includes("saint-nicolas");
+
+  if (!isExplicitBcsn) {
+    if (rawLower.includes("gricourt") || normalized.includes("gricourt")) return CLUBS_DATA.gricourt;
+    if (rawLower.includes("margny") || normalized.includes("margny")) return CLUBS_DATA.margny;
+    if (rawLower.includes("longueau") || normalized.includes("longueau")) return CLUBS_DATA.longueau;
+    if (rawLower.includes("crepy") || rawLower.includes("crépy") || normalized.includes("crepy")) return CLUBS_DATA.crepy;
+    if (rawLower.includes("gouvieux") || normalized.includes("gouvieux")) return CLUBS_DATA.gouvieux;
+    if (rawLower.includes("hornaing") || normalized.includes("hornaing")) return CLUBS_DATA.hornaing;
+    if (
+      rawLower.includes("quentin") ||
+      rawLower.includes("saint-quentin") ||
+      rawLower.includes("st-quentin") ||
+      normalized.includes("stquentin") ||
+      normalized.includes("saintquentin")
+    ) {
+      return CLUBS_DATA.stquentin;
+    }
+    if (rawLower.includes("amiens") || normalized.includes("amiens")) return CLUBS_DATA.amiens;
+    if (rawLower.includes("lesquin") || normalized.includes("lesquin")) return CLUBS_DATA.lesquin;
+    if (
+      rawLower.includes("liller") ||
+      rawLower.includes("lilier") ||
+      normalized.includes("lillers") ||
+      normalized.includes("lillier")
+    ) {
+      return CLUBS_DATA.lillers;
+    }
+
+    // Check partial containment for other entries in CLUBS_DATA (except bcsn)
+    for (const [key, club] of Object.entries(CLUBS_DATA)) {
+      if (key === "bcsn") continue;
+      const normShort = normalizeClubString(club.shortName);
+      if (normShort.length >= 4 && (normalized.includes(normShort) || normShort.includes(normalized))) {
+        return club;
+      }
+    }
+  } else {
+    return CLUBS_DATA.bcsn;
+  }
+
+  // 4. Fallback: opponent club not present in predefined list (create custom opponent profile, never fallback to BCSN!)
+  const displayName = slug
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    id: normalized || slug.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+    name: displayName,
+    shortName: displayName,
+    fullName: displayName,
+    city: displayName,
+    hall: "Salle adverse",
+    logoEmoji: "🏀",
+    primaryColor: "from-slate-700 to-slate-900",
+    badgeRole: "Adversaire",
+    wins: 4,
+    losses: 4,
+    avgPointsScored: 72.0,
+    avgPointsConceded: 72.0,
+    recentForm: ["W", "L", "W", "L", "W"],
+    homeRecord: "2-2",
+    awayRecord: "2-2",
+    keyPlayers: ["Équipe adverse"],
+    strengths: ["Jeu d'équipe"],
+    weaknesses: ["Données FFBB en cours d'actualisation"],
+    pronoAdvice: `Match à suivre avec attention face à ${displayName}.`,
+  };
 }
 
 export function getClubSlug(nameStr: string): string {
+  if (!nameStr) return "bcsn";
   return getClubBySlug(nameStr).id;
 }
+
 

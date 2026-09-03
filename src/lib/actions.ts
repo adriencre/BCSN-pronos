@@ -13,7 +13,11 @@ import {
   sendMatchResultPushNotifications,
   getPushSubscribersStats,
   checkAndSendAutomatedMatchReminders,
+  getMatchRemindersStatus,
+  resetMatchReminders,
   type PushSubscriptionData,
+  type ReminderType,
+  type MatchReminderStatus,
 } from "./pushNotifications";
 
 
@@ -39,6 +43,10 @@ export interface MatchRecord {
   scoreOpponent: number | null;
   status: string;
   matchday: number;
+  reminder24hSent?: boolean;
+  reminder2hSent?: boolean;
+  reminder24hAt?: Date | null;
+  reminder2hAt?: Date | null;
   createdAt: Date;
   predictions?: PredictionRecord[];
 }
@@ -83,6 +91,10 @@ function transformMatch(row: any): MatchRecord {
     scoreOpponent: row.score_opponent,
     status: row.status ?? "PENDING",
     matchday: row.matchday ?? 0,
+    reminder24hSent: !!row.reminder_24h_sent,
+    reminder2hSent: !!row.reminder_2h_sent,
+    reminder24hAt: row.reminder_24h_at ? new Date(row.reminder_24h_at) : null,
+    reminder2hAt: row.reminder_2h_at ? new Date(row.reminder_2h_at) : null,
     createdAt: new Date(row.created_at),
     predictions: publicPreds,
   };
@@ -773,13 +785,43 @@ export async function sendAdminAnnouncementAction(
   };
 }
 
-export async function sendMatchReminderAction(matchId: number) {
+export async function sendMatchReminderAction(
+  matchId: number,
+  reminderType: ReminderType = "MANUAL"
+) {
   const user = await getCurrentUser();
   if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
     return { error: "Accès réservé aux administrateurs" };
   }
 
-  return await sendMatchReminderToPendingUsers(matchId);
+  return await sendMatchReminderToPendingUsers(matchId, reminderType);
+}
+
+export async function getMatchRemindersStatusAction(matchId: number) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return null;
+  }
+
+  return await getMatchRemindersStatus(matchId);
+}
+
+export async function resetMatchRemindersAction(matchId: number) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return { error: "Accès réservé aux administrateurs" };
+  }
+
+  return await resetMatchReminders(matchId);
+}
+
+export async function runAutomatedRemindersAction() {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== "ADMIN" && user.role !== "COACH")) {
+    return { error: "Accès réservé aux administrateurs" };
+  }
+
+  return await checkAndSendAutomatedMatchReminders();
 }
 
 export async function getPushSubscribersStatsAction() {

@@ -399,13 +399,15 @@ export default function ActiveMatchView({
                 className="w-full h-full object-contain"
               />
               <span className="absolute bottom-0 inset-x-0 bg-primary text-white text-[8px] font-black uppercase text-center py-0.5 tracking-wider">
-                DOMICILE
+                {match.isHome ? "DOMICILE" : "EXTÉRIEUR"}
               </span>
             </div>
             <p className="text-xs font-black text-text-1 text-center leading-tight">
               BCSN
             </p>
-            <p className="text-[10px] text-text-3 font-semibold mt-0.5">Saint-Nicolas</p>
+            <p className="text-[10px] text-text-3 font-semibold mt-0.5">
+              {match.isHome ? "Saint-Nicolas" : "En déplacement"}
+            </p>
             <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
               Fiche Club <ArrowRight size={10} />
             </span>
@@ -439,13 +441,15 @@ export default function ActiveMatchView({
                 </div>
               )}
               <span className="absolute bottom-0 inset-x-0 bg-slate-800 text-white text-[8px] font-black uppercase text-center py-0.5 tracking-wider">
-                ADVERSAIRE
+                {match.isHome ? "ADVERSAIRE" : "DOMICILE"}
               </span>
             </div>
             <p className="text-xs font-black text-text-1 text-center leading-tight truncate max-w-[120px]">
               {match.opponent}
             </p>
-            <p className="text-[10px] text-text-3 font-semibold mt-0.5">Visiteur</p>
+            <p className="text-[10px] text-text-3 font-semibold mt-0.5">
+              {match.isHome ? "Visiteur" : "Hôte"}
+            </p>
             <span className="text-[10px] text-primary-text font-bold mt-1 flex items-center gap-0.5 group-hover:underline">
               Fiche Club <ArrowRight size={10} />
             </span>

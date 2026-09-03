@@ -7,6 +7,7 @@ interface PageProps {
 
 export default async function ClubDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
-  const club = getClubBySlug(resolvedParams.id);
+  const slug = decodeURIComponent(resolvedParams.id || "");
+  const club = getClubBySlug(slug);
   return <ClubDetailView club={club} />;
 }

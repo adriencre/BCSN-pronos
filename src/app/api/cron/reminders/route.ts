@@ -21,15 +21,18 @@ export async function GET(request: Request) {
       }
     }
 
+    const startTime = Date.now();
     const result = await checkAndSendAutomatedMatchReminders();
     return NextResponse.json({
+      success: true,
       timestamp: new Date().toISOString(),
+      durationMs: Date.now() - startTime,
       ...result,
     });
   } catch (err: any) {
     console.error("Erreur API Cron Reminders:", err);
     return NextResponse.json(
-      { error: err.message || "Erreur serveur interne" },
+      { error: err.message || "Erreur serveur interne", timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
